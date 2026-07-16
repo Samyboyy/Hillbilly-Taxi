@@ -33,12 +33,7 @@ namespace HillbillyTaxi.Vehicles
                 return;
             }
 
-            _occupantClientIds.Clear();
-
-            for (int index = 0; index < SeatCount; index++)
-            {
-                _occupantClientIds.Add(EmptySeatClientId);
-            }
+            EnsureSeatListInitialized();
 
             NetworkManager.OnClientDisconnectCallback +=
                 HandleClientDisconnected;
@@ -140,7 +135,7 @@ namespace HillbillyTaxi.Vehicles
             int interactionId)
         {
             if (!TryGetSeat(interactionId, out _) ||
-                IsSeatOccupied(interactionId))
+                IsSeatOccupiedOnServer(interactionId))
             {
                 return false;
             }
@@ -171,13 +166,23 @@ namespace HillbillyTaxi.Vehicles
             if (!IsServer ||
                 playerSeat == null ||
                 playerSeat.IsSeated ||
-                !TryGetSeat(seatIndex, out _) ||
-                IsSeatOccupied(seatIndex))
+                !TryGetSeat(seatIndex, out _))
             {
                 return false;
             }
 
-            if (seatIndex >= _occupantClientIds.Count)
+            EnsureSeatListInitialized();
+
+            // The NetworkList is the replicated presentation state. The player seat
+            // NetworkVariable is independently scanned here as a second server-side
+            // source of truth, so a stale or delayed list can never permit two players
+            // to claim the identical seat.
+            if (IsSeatOccupiedOnServer(seatIndex))
+            {
+                return false;
+            }
+
+            if (!playerSeat.AssignSeatOnServer(this, seatIndex))
             {
                 return false;
             }
@@ -185,15 +190,7 @@ namespace HillbillyTaxi.Vehicles
             _occupantClientIds[seatIndex] =
                 playerSeat.OwnerClientId;
 
-            if (playerSeat.AssignSeatOnServer(this, seatIndex))
-            {
-                return true;
-            }
-
-            _occupantClientIds[seatIndex] =
-                EmptySeatClientId;
-
-            return false;
+            return true;
         }
 
         internal bool TryExitSeatOnServer(
@@ -204,11 +201,24 @@ namespace HillbillyTaxi.Vehicles
                 !playerSeat.TryGetServerSeat(
                     out NetworkVehicle vehicle,
                     out int seatIndex) ||
-                vehicle != this ||
-                seatIndex < 0 ||
-                seatIndex >= _occupantClientIds.Count ||
-                _occupantClientIds[seatIndex] !=
-                    playerSeat.OwnerClientId)
+                vehicle != this)
+            {
+                return false;
+            }
+
+            EnsureSeatListInitialized();
+
+            if (seatIndex < 0 ||
+                seatIndex >= _occupantClientIds.Count)
+            {
+                return false;
+            }
+
+            ulong recordedClientId =
+                _occupantClientIds[seatIndex];
+
+            if (recordedClientId != EmptySeatClientId &&
+                recordedClientId != playerSeat.OwnerClientId)
             {
                 return false;
             }
@@ -229,16 +239,102 @@ namespace HillbillyTaxi.Vehicles
                 return;
             }
 
+            EnsureSeatListInitialized();
+
             if (expectedSeatIndex >= 0 &&
                 expectedSeatIndex < _occupantClientIds.Count &&
                 _occupantClientIds[expectedSeatIndex] == clientId)
             {
                 _occupantClientIds[expectedSeatIndex] =
                     EmptySeatClientId;
+
                 return;
             }
 
             HandleClientDisconnected(clientId);
+        }
+
+        private bool IsSeatOccupiedOnServer(int seatIndex)
+        {
+            if (!IsServer ||
+                seatIndex < 0 ||
+                seatIndex >= SeatCount)
+            {
+                return IsSeatOccupied(seatIndex);
+            }
+
+            EnsureSeatListInitialized();
+
+            ulong listedClientId =
+                _occupantClientIds[seatIndex];
+
+            if (listedClientId != EmptySeatClientId)
+            {
+                if (NetworkManager.ConnectedClients.ContainsKey(
+                        listedClientId))
+                {
+                    return true;
+                }
+
+                // Clear a stale list entry left by an abnormal disconnect.
+                _occupantClientIds[seatIndex] =
+                    EmptySeatClientId;
+            }
+
+            foreach (NetworkClient connectedClient in
+                     NetworkManager.ConnectedClientsList)
+            {
+                NetworkObject playerObject =
+                    connectedClient.PlayerObject;
+
+                if (playerObject == null)
+                {
+                    continue;
+                }
+
+                NetworkPlayerSeatController playerSeat =
+                    playerObject.GetComponent<
+                        NetworkPlayerSeatController>();
+
+                if (playerSeat == null ||
+                    !playerSeat.TryGetServerSeat(
+                        out NetworkVehicle occupiedVehicle,
+                        out int occupiedSeatIndex))
+                {
+                    continue;
+                }
+
+                if (occupiedVehicle == this &&
+                    occupiedSeatIndex == seatIndex)
+                {
+                    _occupantClientIds[seatIndex] =
+                        playerSeat.OwnerClientId;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void EnsureSeatListInitialized()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            while (_occupantClientIds.Count < SeatCount)
+            {
+                _occupantClientIds.Add(
+                    EmptySeatClientId);
+            }
+
+            while (_occupantClientIds.Count > SeatCount)
+            {
+                _occupantClientIds.RemoveAt(
+                    _occupantClientIds.Count - 1);
+            }
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -247,6 +343,8 @@ namespace HillbillyTaxi.Vehicles
             {
                 return;
             }
+
+            EnsureSeatListInitialized();
 
             for (
                 int index = 0;

@@ -9,6 +9,7 @@ namespace HillbillyTaxi.Player
     /// Synchronises which vehicle seat a player occupies and handles the local
     /// seated camera. The server alone changes the seat state.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
     public sealed class NetworkPlayerSeatController : NetworkBehaviour
@@ -30,6 +31,7 @@ namespace HillbillyTaxi.Player
 
         private Vector3 _standingCameraLocalPosition;
         private Quaternion _standingCameraLocalRotation;
+        private bool _standingCameraPoseCached;
 
         private float _seatPitch;
         private float _seatYaw;
@@ -42,24 +44,16 @@ namespace HillbillyTaxi.Player
 
         private void Awake()
         {
-            ResolveCameraRig();
-
-            if (cameraRig != null)
-            {
-                _standingCameraLocalPosition =
-                    cameraRig.localPosition;
-
-                _standingCameraLocalRotation =
-                    cameraRig.localRotation;
-            }
+            EnsureStandingCameraPoseCached();
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
-            _seatState.OnValueChanged +=
-                HandleSeatStateChanged;
+            EnsureStandingCameraPoseCached();
+
+            _seatState.OnValueChanged += HandleSeatStateChanged;
 
             ApplyStateTransition(
                 NetworkSeatState.NotSeated,
@@ -68,8 +62,7 @@ namespace HillbillyTaxi.Player
 
         public override void OnNetworkDespawn()
         {
-            _seatState.OnValueChanged -=
-                HandleSeatStateChanged;
+            _seatState.OnValueChanged -= HandleSeatStateChanged;
 
             if (IsServer &&
                 _seatState.Value.IsSeated &&
@@ -88,6 +81,11 @@ namespace HillbillyTaxi.Player
 
         public void SetLocalControl(bool enabled)
         {
+            // NetworkPlayerCharacter can call this from its Awake before Unity has
+            // invoked our Awake. Cache the authored camera pose before doing anything
+            // that might restore it.
+            EnsureStandingCameraPoseCached();
+
             _localControlEnabled = enabled;
 
             if (!enabled)
@@ -323,7 +321,10 @@ namespace HillbillyTaxi.Player
 
         private void RestoreStandingCamera()
         {
-            if (cameraRig == null)
+            EnsureStandingCameraPoseCached();
+
+            if (cameraRig == null ||
+                !_standingCameraPoseCached)
             {
                 return;
             }
@@ -333,6 +334,29 @@ namespace HillbillyTaxi.Player
 
             cameraRig.localRotation =
                 _standingCameraLocalRotation;
+        }
+
+        private void EnsureStandingCameraPoseCached()
+        {
+            if (_standingCameraPoseCached)
+            {
+                return;
+            }
+
+            ResolveCameraRig();
+
+            if (cameraRig == null)
+            {
+                return;
+            }
+
+            _standingCameraLocalPosition =
+                cameraRig.localPosition;
+
+            _standingCameraLocalRotation =
+                cameraRig.localRotation;
+
+            _standingCameraPoseCached = true;
         }
 
         private void ResolveCameraRig()
