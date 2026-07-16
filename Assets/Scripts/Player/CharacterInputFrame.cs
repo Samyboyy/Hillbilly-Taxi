@@ -13,19 +13,27 @@ namespace HillbillyTaxi.Player
             Vector2 look,
             bool jumpPressed,
             bool sprintHeld,
+            bool interactPressed,
             bool lookComesFromMouse)
         {
             Move = move;
             Look = look;
             JumpPressed = jumpPressed;
             SprintHeld = sprintHeld;
+            InteractPressed = interactPressed;
             LookComesFromMouse = lookComesFromMouse;
         }
 
         public Vector2 Move { get; }
+
         public Vector2 Look { get; }
+
         public bool JumpPressed { get; }
+
         public bool SprintHeld { get; }
+
+        public bool InteractPressed { get; }
+
         public bool LookComesFromMouse { get; }
 
         public CharacterInputFrame WithoutLook()
@@ -35,6 +43,7 @@ namespace HillbillyTaxi.Player
                 Vector2.zero,
                 JumpPressed,
                 SprintHeld,
+                InteractPressed,
                 LookComesFromMouse);
         }
     }

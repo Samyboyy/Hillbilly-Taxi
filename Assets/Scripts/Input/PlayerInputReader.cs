@@ -13,12 +13,15 @@ namespace HillbillyTaxi.Input
         private const string LookActionName = "Look";
         private const string JumpActionName = "Jump";
         private const string SprintActionName = "Sprint";
+        private const string InteractActionName = "Interact";
 
         private PlayerInput _playerInput;
         private InputAction _moveAction;
         private InputAction _lookAction;
         private InputAction _jumpAction;
         private InputAction _sprintAction;
+        private InputAction _interactAction;
+
         private bool _inputEnabled;
         private bool _inputStateApplied;
 
@@ -70,10 +73,14 @@ namespace HillbillyTaxi.Input
                 return default;
             }
 
-            Vector2 move = Vector2.ClampMagnitude(_moveAction.ReadValue<Vector2>(), 1f);
+            Vector2 move = Vector2.ClampMagnitude(
+                _moveAction.ReadValue<Vector2>(),
+                1f);
+
             Vector2 look = _lookAction.ReadValue<Vector2>();
             bool jumpPressed = _jumpAction.WasPressedThisFrame();
             bool sprintHeld = _sprintAction.IsPressed();
+            bool interactPressed = _interactAction.WasPressedThisFrame();
             bool lookComesFromMouse = _lookAction.activeControl?.device is Mouse;
 
             return new CharacterInputFrame(
@@ -81,6 +88,7 @@ namespace HillbillyTaxi.Input
                 look,
                 jumpPressed,
                 sprintHeld,
+                interactPressed,
                 lookComesFromMouse);
         }
 
@@ -96,7 +104,8 @@ namespace HillbillyTaxi.Input
             if (_playerInput.actions == null)
             {
                 throw new MissingReferenceException(
-                    $"{nameof(PlayerInputReader)} on '{name}' needs an Input Actions asset assigned to PlayerInput.");
+                    $"{nameof(PlayerInputReader)} on '{name}' needs an Input Actions asset " +
+                    "assigned to PlayerInput.");
             }
 
             CacheActions();
@@ -108,6 +117,7 @@ namespace HillbillyTaxi.Input
             _lookAction = _playerInput.actions.FindAction(LookActionName, true);
             _jumpAction = _playerInput.actions.FindAction(JumpActionName, true);
             _sprintAction = _playerInput.actions.FindAction(SprintActionName, true);
+            _interactAction = _playerInput.actions.FindAction(InteractActionName, true);
         }
     }
 }

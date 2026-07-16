@@ -1,4 +1,5 @@
 using HillbillyTaxi.Input;
+using HillbillyTaxi.Interaction;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,6 +11,7 @@ namespace HillbillyTaxi.Player
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(FirstPersonCharacterMotor))]
+    [RequireComponent(typeof(NetworkPlayerInteractor))]
     public sealed class NetworkPlayerCharacter : NetworkBehaviour
     {
         [Header("Owner-only presentation")]
@@ -28,6 +30,7 @@ namespace HillbillyTaxi.Player
 
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
+        private NetworkPlayerInteractor _interactor;
         private Camera _ownerCamera;
 
         private int _ownerCameraOriginalCullingMask;
@@ -42,6 +45,7 @@ namespace HillbillyTaxi.Player
         {
             _inputReader = GetComponent<PlayerInputReader>();
             _motor = GetComponent<FirstPersonCharacterMotor>();
+            _interactor = GetComponent<NetworkPlayerInteractor>();
 
             CachePresentationState();
             SetLocalControl(false);
@@ -81,13 +85,18 @@ namespace HillbillyTaxi.Player
             HandleCursorState();
 
             CharacterInputFrame input = _inputReader.ReadFrame();
+            bool gameplayCursorLocked =
+                Cursor.lockState == CursorLockMode.Locked;
 
-            if (Cursor.lockState != CursorLockMode.Locked)
+            if (!gameplayCursorLocked)
             {
                 input = input.WithoutLook();
             }
 
             _motor.Tick(input, Time.deltaTime);
+            _interactor.Tick(
+                input.InteractPressed,
+                gameplayCursorLocked);
         }
 
         private void CachePresentationState()
@@ -102,39 +111,55 @@ namespace HillbillyTaxi.Player
 
             if (_ownerCamera != null)
             {
-                _ownerCameraOriginalCullingMask = _ownerCamera.cullingMask;
+                _ownerCameraOriginalCullingMask =
+                    _ownerCamera.cullingMask;
             }
 
             if (renderersHiddenFromOwner == null)
             {
-                _originalRendererLayers = System.Array.Empty<int>();
+                _originalRendererLayers =
+                    System.Array.Empty<int>();
             }
             else
             {
-                _originalRendererLayers = new int[renderersHiddenFromOwner.Length];
+                _originalRendererLayers =
+                    new int[renderersHiddenFromOwner.Length];
 
-                for (int index = 0; index < renderersHiddenFromOwner.Length; index++)
+                for (
+                    int index = 0;
+                    index < renderersHiddenFromOwner.Length;
+                    index++)
                 {
-                    Renderer targetRenderer = renderersHiddenFromOwner[index];
+                    Renderer targetRenderer =
+                        renderersHiddenFromOwner[index];
+
                     _originalRendererLayers[index] =
-                        targetRenderer != null ? targetRenderer.gameObject.layer : 0;
+                        targetRenderer != null
+                            ? targetRenderer.gameObject.layer
+                            : 0;
                 }
             }
 
-            _localPlayerLayer = LayerMask.NameToLayer(localPlayerLayerName);
+            _localPlayerLayer =
+                LayerMask.NameToLayer(localPlayerLayerName);
         }
 
         private void SetLocalControl(bool enabled)
         {
-            bool previouslyHadLocalControl = _localControlEnabled;
+            bool previouslyHadLocalControl =
+                _localControlEnabled;
+
             _localControlEnabled = enabled;
 
             _inputReader.SetInputEnabled(enabled);
             _motor.SetSimulationEnabled(enabled);
+            _interactor.SetInteractionEnabled(enabled);
 
             if (ownerOnlyObjects != null)
             {
-                foreach (GameObject ownerOnlyObject in ownerOnlyObjects)
+                foreach (
+                    GameObject ownerOnlyObject
+                    in ownerOnlyObjects)
                 {
                     if (ownerOnlyObject != null)
                     {
@@ -149,14 +174,16 @@ namespace HillbillyTaxi.Player
             {
                 CaptureCursor();
             }
-            else if (previouslyHadLocalControl &&
-                     Cursor.lockState == CursorLockMode.Locked)
+            else if (
+                previouslyHadLocalControl &&
+                Cursor.lockState == CursorLockMode.Locked)
             {
                 ReleaseCursor();
             }
         }
 
-        private void ConfigureOwnerRendererVisibility(bool isLocalOwner)
+        private void ConfigureOwnerRendererVisibility(
+            bool isLocalOwner)
         {
             CachePresentationState();
 
@@ -172,7 +199,8 @@ namespace HillbillyTaxi.Player
 
                 if (_ownerCamera != null)
                 {
-                    _ownerCamera.cullingMask = _ownerCameraOriginalCullingMask;
+                    _ownerCamera.cullingMask =
+                        _ownerCameraOriginalCullingMask;
                 }
 
                 return;
@@ -194,18 +222,22 @@ namespace HillbillyTaxi.Player
                 return;
             }
 
-            foreach (Renderer targetRenderer in renderersHiddenFromOwner)
+            foreach (
+                Renderer targetRenderer
+                in renderersHiddenFromOwner)
             {
                 if (targetRenderer != null)
                 {
-                    targetRenderer.gameObject.layer = _localPlayerLayer;
+                    targetRenderer.gameObject.layer =
+                        _localPlayerLayer;
                 }
             }
 
             if (_ownerCamera != null)
             {
                 _ownerCamera.cullingMask =
-                    _ownerCameraOriginalCullingMask & ~(1 << _localPlayerLayer);
+                    _ownerCameraOriginalCullingMask &
+                    ~(1 << _localPlayerLayer);
             }
         }
 
@@ -217,11 +249,13 @@ namespace HillbillyTaxi.Player
 
             for (int index = 0; index < count; index++)
             {
-                Renderer targetRenderer = renderersHiddenFromOwner[index];
+                Renderer targetRenderer =
+                    renderersHiddenFromOwner[index];
 
                 if (targetRenderer != null)
                 {
-                    targetRenderer.gameObject.layer = _originalRendererLayers[index];
+                    targetRenderer.gameObject.layer =
+                        _originalRendererLayers[index];
                 }
             }
         }

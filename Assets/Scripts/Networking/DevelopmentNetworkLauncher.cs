@@ -10,7 +10,6 @@ namespace HillbillyTaxi.Networking
     [DisallowMultipleComponent]
     public sealed class DevelopmentNetworkLauncher : MonoBehaviour
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnGUI()
         {
             NetworkManager manager = NetworkManager.Singleton;
@@ -54,6 +53,5 @@ namespace HillbillyTaxi.Networking
 
             GUILayout.EndArea();
         }
-#endif
     }
 }
