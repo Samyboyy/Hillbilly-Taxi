@@ -58,13 +58,15 @@ namespace HillbillyTaxi.Player
             SetLocalControl(false);
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             if (_seatController != null)
             {
                 _seatController.SeatStateChanged -=
                     HandleSeatStateChanged;
             }
+
+            base.OnDestroy();
         }
 
         public override void OnNetworkSpawn()

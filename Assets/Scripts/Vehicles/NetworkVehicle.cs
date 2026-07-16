@@ -358,10 +358,5 @@ namespace HillbillyTaxi.Vehicles
                 }
             }
         }
-
-        private void OnDestroy()
-        {
-            _occupantClientIds.Dispose();
-        }
     }
 }
