@@ -1,4 +1,3 @@
-using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -25,8 +24,8 @@ namespace HillbillyTaxi.Interaction
         [SerializeField, Min(0f)] private float serverDistanceTolerance = 0.75f;
 
         [Tooltip(
-            "Approximate eye height used by the server. It does not trust the client's " +
-            "reported camera position.")]
+            "Approximate eye height used by the server. It does not trust the " +
+            "client's reported camera position.")]
         [SerializeField, Min(0f)] private float serverEyeHeight = 1.25f;
 
         [SerializeField] private bool requireServerLineOfSight = true;
@@ -35,9 +34,11 @@ namespace HillbillyTaxi.Interaction
         private readonly RaycastHit[] _raycastHits = new RaycastHit[24];
 
         private NetworkInteractable _currentTarget;
+        private int _currentInteractionId;
         private bool _interactionEnabled;
 
         public NetworkInteractable CurrentTarget => _currentTarget;
+        public int CurrentInteractionId => _currentInteractionId;
 
         public void SetInteractionEnabled(bool enabled)
         {
@@ -61,23 +62,34 @@ namespace HillbillyTaxi.Interaction
                 return;
             }
 
-            NetworkInteractable target = FindLocalTarget();
-            SetTarget(target);
+            if (TryFindLocalTarget(
+                    out NetworkInteractable target,
+                    out int interactionId))
+            {
+                SetTarget(target, interactionId);
+            }
+            else
+            {
+                ClearTarget();
+            }
 
             if (!interactPressed || _currentTarget == null)
             {
                 return;
             }
 
-            NetworkObject targetNetworkObject = _currentTarget.NetworkObject;
+            NetworkObject targetNetworkObject =
+                _currentTarget.NetworkObject;
 
-            if (targetNetworkObject == null || !targetNetworkObject.IsSpawned)
+            if (targetNetworkObject == null ||
+                !targetNetworkObject.IsSpawned)
             {
                 return;
             }
 
             RequestInteractionRpc(
-                new NetworkObjectReference(targetNetworkObject));
+                new NetworkObjectReference(targetNetworkObject),
+                _currentInteractionId);
         }
 
         public override void OnNetworkDespawn()
@@ -86,8 +98,13 @@ namespace HillbillyTaxi.Interaction
             base.OnNetworkDespawn();
         }
 
-        private NetworkInteractable FindLocalTarget()
+        private bool TryFindLocalTarget(
+            out NetworkInteractable target,
+            out int interactionId)
         {
+            target = null;
+            interactionId = 0;
+
             Ray ray = new Ray(
                 interactionCamera.transform.position,
                 interactionCamera.transform.forward);
@@ -132,31 +149,43 @@ namespace HillbillyTaxi.Interaction
 
             if (!foundNearestHit)
             {
-                return null;
+                return false;
             }
 
-            NetworkInteractable target =
-                nearestHit.collider.GetComponentInParent<NetworkInteractable>();
+            NetworkInteractionPoint point =
+                nearestHit.collider
+                    .GetComponentInParent<NetworkInteractionPoint>();
 
-            if (target == null || !target.CanShowPrompt(this))
+            if (point != null &&
+                point.TryGetTarget(out target, out interactionId))
             {
-                return null;
+                return target.CanShowPrompt(this, interactionId);
             }
 
-            return target;
+            target =
+                nearestHit.collider
+                    .GetComponentInParent<NetworkInteractable>();
+
+            if (target == null ||
+                !target.AllowDirectColliderTargeting)
+            {
+                target = null;
+                return false;
+            }
+
+            interactionId = 0;
+            return target.CanShowPrompt(this, interactionId);
         }
 
-        private void SetTarget(NetworkInteractable target)
+        private void SetTarget(
+            NetworkInteractable target,
+            int interactionId)
         {
             _currentTarget = target;
+            _currentInteractionId = interactionId;
 
-            if (_currentTarget == null)
-            {
-                promptView?.Hide();
-                return;
-            }
-
-            string prompt = _currentTarget.GetPrompt(this);
+            string prompt =
+                _currentTarget.GetPrompt(this, interactionId);
 
             if (string.IsNullOrWhiteSpace(prompt))
             {
@@ -170,12 +199,14 @@ namespace HillbillyTaxi.Interaction
         private void ClearTarget()
         {
             _currentTarget = null;
+            _currentInteractionId = 0;
             promptView?.Hide();
         }
 
         [Rpc(SendTo.Server)]
         private void RequestInteractionRpc(
             NetworkObjectReference targetReference,
+            int interactionId,
             RpcParams rpcParams = default)
         {
             if (rpcParams.Receive.SenderClientId != OwnerClientId)
@@ -210,7 +241,9 @@ namespace HillbillyTaxi.Interaction
                 transform.position + Vector3.up * serverEyeHeight;
 
             Vector3 targetPosition =
-                target.GetInteractionPosition(serverOrigin);
+                target.GetInteractionPosition(
+                    interactionId,
+                    serverOrigin);
 
             float allowedDistance =
                 interactionDistance + serverDistanceTolerance;
@@ -230,7 +263,7 @@ namespace HillbillyTaxi.Interaction
                 return;
             }
 
-            target.TryInteractOnServer(this);
+            target.TryInteractOnServer(this, interactionId);
         }
 
         private bool HasServerLineOfSight(
@@ -287,32 +320,52 @@ namespace HillbillyTaxi.Interaction
 
             if (!foundNearestHit)
             {
-                // Nothing blocked the ray. This also supports interactables that use
-                // trigger-only colliders.
                 return true;
             }
 
-            NetworkInteractable hitTarget =
-                nearestHit.collider.GetComponentInParent<NetworkInteractable>();
+            NetworkInteractionPoint point =
+                nearestHit.collider
+                    .GetComponentInParent<NetworkInteractionPoint>();
 
-            return hitTarget == expectedTarget;
+            if (point != null &&
+                point.TryGetTarget(
+                    out NetworkInteractable pointTarget,
+                    out _))
+            {
+                return pointTarget == expectedTarget;
+            }
+
+            NetworkInteractable directTarget =
+                nearestHit.collider
+                    .GetComponentInParent<NetworkInteractable>();
+
+            return directTarget == expectedTarget;
         }
 
         private void Reset()
         {
-            interactionCamera = GetComponentInChildren<Camera>(true);
-            promptView = GetComponentInChildren<InteractionPromptView>(true);
+            interactionCamera =
+                GetComponentInChildren<Camera>(true);
+
+            promptView =
+                GetComponentInChildren<InteractionPromptView>(true);
         }
 
         private void OnValidate()
         {
-            interactionDistance = Mathf.Max(0.1f, interactionDistance);
-            serverDistanceTolerance = Mathf.Max(0f, serverDistanceTolerance);
-            serverEyeHeight = Mathf.Max(0f, serverEyeHeight);
+            interactionDistance =
+                Mathf.Max(0.1f, interactionDistance);
+
+            serverDistanceTolerance =
+                Mathf.Max(0f, serverDistanceTolerance);
+
+            serverEyeHeight =
+                Mathf.Max(0f, serverEyeHeight);
 
             if (interactionCamera == null)
             {
-                interactionCamera = GetComponentInChildren<Camera>(true);
+                interactionCamera =
+                    GetComponentInChildren<Camera>(true);
             }
 
             if (promptView == null)

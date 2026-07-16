@@ -4,8 +4,7 @@ using UnityEngine;
 namespace HillbillyTaxi.Interaction
 {
     /// <summary>
-    /// Small server-authoritative test target. Pressing Interact toggles one
-    /// NetworkVariable, and every client renders the same state.
+    /// Small server-authoritative test target.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class NetworkToggleInteractable : NetworkInteractable
@@ -27,16 +26,19 @@ namespace HillbillyTaxi.Interaction
         [SerializeField] private Color onColor =
             new Color(0.25f, 0.85f, 0.35f, 1f);
 
-        private NetworkVariable<bool> _isOn = new NetworkVariable<bool>(
-            false,
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<bool> _isOn =
+            new NetworkVariable<bool>(
+                false,
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
 
         private MaterialPropertyBlock _propertyBlock;
 
         public bool IsOn => _isOn.Value;
 
-        public override string GetPrompt(NetworkPlayerInteractor interactor)
+        public override string GetPrompt(
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             return _isOn.Value ? turnOffPrompt : turnOnPrompt;
         }
@@ -56,12 +58,15 @@ namespace HillbillyTaxi.Interaction
         }
 
         protected override void InteractOnServer(
-            NetworkPlayerInteractor interactor)
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             _isOn.Value = !_isOn.Value;
         }
 
-        private void HandleStateChanged(bool previousValue, bool newValue)
+        private void HandleStateChanged(
+            bool previousValue,
+            bool newValue)
         {
             ApplyState(newValue);
         }
@@ -107,7 +112,8 @@ namespace HillbillyTaxi.Interaction
         {
             if (targetRenderer == null)
             {
-                targetRenderer = GetComponentInChildren<Renderer>();
+                targetRenderer =
+                    GetComponentInChildren<Renderer>();
             }
 
             if (!Application.isPlaying)

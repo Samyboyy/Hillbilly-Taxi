@@ -6,9 +6,8 @@ namespace HillbillyTaxi.Interaction
     /// <summary>
     /// Base class for anything a networked player can interact with.
     ///
-    /// The owning client only chooses a target and sends its NetworkObject reference.
-    /// The server performs the distance, line-of-sight, and availability checks before
-    /// allowing the interaction.
+    /// The owning client chooses a NetworkObject plus an interaction ID.
+    /// The server validates the request before changing gameplay state.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
@@ -18,23 +17,36 @@ namespace HillbillyTaxi.Interaction
         [SerializeField] private string defaultPrompt = "Interact";
 
         [Tooltip(
-            "Optional point used for server distance and line-of-sight checks. " +
-            "When empty, the closest point on this object's collider is used.")]
+            "Optional default point used for interaction ID 0. " +
+            "Complex interactables can override GetInteractionPosition.")]
         [SerializeField] private Transform interactionPoint;
 
         private Collider _cachedCollider;
 
-        public virtual string GetPrompt(NetworkPlayerInteractor interactor)
+        /// <summary>
+        /// Simple objects can be targeted through any collider beneath them.
+        /// Complex objects such as vehicles override this and require an explicit
+        /// NetworkInteractionPoint on the collider being targeted.
+        /// </summary>
+        public virtual bool AllowDirectColliderTargeting => true;
+
+        public virtual string GetPrompt(
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             return defaultPrompt;
         }
 
-        public virtual bool CanShowPrompt(NetworkPlayerInteractor interactor)
+        public virtual bool CanShowPrompt(
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             return isActiveAndEnabled && IsSpawned;
         }
 
-        public Vector3 GetInteractionPosition(Vector3 observerPosition)
+        public virtual Vector3 GetInteractionPosition(
+            int interactionId,
+            Vector3 observerPosition)
         {
             if (interactionPoint != null)
             {
@@ -51,27 +63,33 @@ namespace HillbillyTaxi.Interaction
                 : transform.position;
         }
 
-        internal bool TryInteractOnServer(NetworkPlayerInteractor interactor)
+        internal bool TryInteractOnServer(
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             if (!IsServer || !isActiveAndEnabled || !IsSpawned)
             {
                 return false;
             }
 
-            if (!CanInteractOnServer(interactor))
+            if (!CanInteractOnServer(interactor, interactionId))
             {
                 return false;
             }
 
-            InteractOnServer(interactor);
+            InteractOnServer(interactor, interactionId);
             return true;
         }
 
-        protected virtual bool CanInteractOnServer(NetworkPlayerInteractor interactor)
+        protected virtual bool CanInteractOnServer(
+            NetworkPlayerInteractor interactor,
+            int interactionId)
         {
             return true;
         }
 
-        protected abstract void InteractOnServer(NetworkPlayerInteractor interactor);
+        protected abstract void InteractOnServer(
+            NetworkPlayerInteractor interactor,
+            int interactionId);
     }
 }

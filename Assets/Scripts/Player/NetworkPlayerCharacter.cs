@@ -12,6 +12,7 @@ namespace HillbillyTaxi.Player
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(FirstPersonCharacterMotor))]
     [RequireComponent(typeof(NetworkPlayerInteractor))]
+    [RequireComponent(typeof(NetworkPlayerSeatController))]
     public sealed class NetworkPlayerCharacter : NetworkBehaviour
     {
         [Header("Owner-only presentation")]
@@ -19,18 +20,19 @@ namespace HillbillyTaxi.Player
         [SerializeField] private GameObject[] ownerOnlyObjects;
 
         [Tooltip(
-            "Renderers hidden from the owning gameplay camera. They remain enabled so mirrors, " +
-            "reflection cameras, and other players can still render them.")]
+            "Renderers hidden from the owning gameplay camera. They remain enabled " +
+            "so mirrors, reflection cameras, and other players can still render them.")]
         [SerializeField] private Renderer[] renderersHiddenFromOwner;
 
         [Tooltip(
-            "Create this layer in Project Settings > Tags and Layers. The owning gameplay camera " +
-            "will exclude it, while mirror/reflection cameras can include it.")]
+            "The owning gameplay camera excludes this layer, while mirror and " +
+            "reflection cameras can include it.")]
         [SerializeField] private string localPlayerLayerName = "LocalPlayer";
 
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
         private NetworkPlayerInteractor _interactor;
+        private NetworkPlayerSeatController _seatController;
         private Camera _ownerCamera;
 
         private int _ownerCameraOriginalCullingMask;
@@ -46,9 +48,23 @@ namespace HillbillyTaxi.Player
             _inputReader = GetComponent<PlayerInputReader>();
             _motor = GetComponent<FirstPersonCharacterMotor>();
             _interactor = GetComponent<NetworkPlayerInteractor>();
+            _seatController =
+                GetComponent<NetworkPlayerSeatController>();
+
+            _seatController.SeatStateChanged +=
+                HandleSeatStateChanged;
 
             CachePresentationState();
             SetLocalControl(false);
+        }
+
+        private void OnDestroy()
+        {
+            if (_seatController != null)
+            {
+                _seatController.SeatStateChanged -=
+                    HandleSeatStateChanged;
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -77,71 +93,42 @@ namespace HillbillyTaxi.Player
 
         private void Update()
         {
-            if (!IsSpawned || !IsOwner || !_localControlEnabled)
+            if (!IsSpawned ||
+                !IsOwner ||
+                !_localControlEnabled)
             {
                 return;
             }
 
             HandleCursorState();
 
-            CharacterInputFrame input = _inputReader.ReadFrame();
+            CharacterInputFrame input =
+                _inputReader.ReadFrame();
+
             bool gameplayCursorLocked =
-                Cursor.lockState == CursorLockMode.Locked;
+                Cursor.lockState ==
+                CursorLockMode.Locked;
 
             if (!gameplayCursorLocked)
             {
                 input = input.WithoutLook();
             }
 
-            _motor.Tick(input, Time.deltaTime);
-            _interactor.Tick(
-                input.InteractPressed,
-                gameplayCursorLocked);
-        }
-
-        private void CachePresentationState()
-        {
-            if (_presentationStateCached)
+            if (_seatController.IsSeated)
             {
+                _seatController.TickOwnerInput(
+                    input,
+                    Time.deltaTime,
+                    gameplayCursorLocked);
+
                 return;
             }
 
-            _presentationStateCached = true;
-            _ownerCamera = GetComponentInChildren<Camera>(true);
+            _motor.Tick(input, Time.deltaTime);
 
-            if (_ownerCamera != null)
-            {
-                _ownerCameraOriginalCullingMask =
-                    _ownerCamera.cullingMask;
-            }
-
-            if (renderersHiddenFromOwner == null)
-            {
-                _originalRendererLayers =
-                    System.Array.Empty<int>();
-            }
-            else
-            {
-                _originalRendererLayers =
-                    new int[renderersHiddenFromOwner.Length];
-
-                for (
-                    int index = 0;
-                    index < renderersHiddenFromOwner.Length;
-                    index++)
-                {
-                    Renderer targetRenderer =
-                        renderersHiddenFromOwner[index];
-
-                    _originalRendererLayers[index] =
-                        targetRenderer != null
-                            ? targetRenderer.gameObject.layer
-                            : 0;
-                }
-            }
-
-            _localPlayerLayer =
-                LayerMask.NameToLayer(localPlayerLayerName);
+            _interactor.Tick(
+                input.InteractPressed,
+                gameplayCursorLocked);
         }
 
         private void SetLocalControl(bool enabled)
@@ -152,8 +139,8 @@ namespace HillbillyTaxi.Player
             _localControlEnabled = enabled;
 
             _inputReader.SetInputEnabled(enabled);
-            _motor.SetSimulationEnabled(enabled);
-            _interactor.SetInteractionEnabled(enabled);
+            _seatController.SetLocalControl(enabled);
+            ApplyGameplayMode();
 
             if (ownerOnlyObjects != null)
             {
@@ -176,10 +163,75 @@ namespace HillbillyTaxi.Player
             }
             else if (
                 previouslyHadLocalControl &&
-                Cursor.lockState == CursorLockMode.Locked)
+                Cursor.lockState ==
+                    CursorLockMode.Locked)
             {
                 ReleaseCursor();
             }
+        }
+
+        private void HandleSeatStateChanged(bool isSeated)
+        {
+            ApplyGameplayMode();
+        }
+
+        private void ApplyGameplayMode()
+        {
+            bool canWalk =
+                _localControlEnabled &&
+                !_seatController.IsSeated;
+
+            _motor.SetSimulationEnabled(canWalk);
+            _interactor.SetInteractionEnabled(canWalk);
+        }
+
+        private void CachePresentationState()
+        {
+            if (_presentationStateCached)
+            {
+                return;
+            }
+
+            _presentationStateCached = true;
+            _ownerCamera =
+                GetComponentInChildren<Camera>(true);
+
+            if (_ownerCamera != null)
+            {
+                _ownerCameraOriginalCullingMask =
+                    _ownerCamera.cullingMask;
+            }
+
+            if (renderersHiddenFromOwner == null)
+            {
+                _originalRendererLayers =
+                    System.Array.Empty<int>();
+            }
+            else
+            {
+                _originalRendererLayers =
+                    new int[
+                        renderersHiddenFromOwner.Length];
+
+                for (
+                    int index = 0;
+                    index <
+                        renderersHiddenFromOwner.Length;
+                    index++)
+                {
+                    Renderer targetRenderer =
+                        renderersHiddenFromOwner[index];
+
+                    _originalRendererLayers[index] =
+                        targetRenderer != null
+                            ? targetRenderer.gameObject.layer
+                            : 0;
+                }
+            }
+
+            _localPlayerLayer =
+                LayerMask.NameToLayer(
+                    localPlayerLayerName);
         }
 
         private void ConfigureOwnerRendererVisibility(
@@ -211,9 +263,8 @@ namespace HillbillyTaxi.Player
                 if (!_missingLayerErrorLogged)
                 {
                     Debug.LogError(
-                        $"Layer '{localPlayerLayerName}' does not exist. Create it in " +
-                        "Project Settings > Tags and Layers so the local player can be hidden " +
-                        "from the gameplay camera while remaining visible in mirrors.",
+                        $"Layer '{localPlayerLayerName}' does not exist. " +
+                        "Create it in Project Settings > Tags and Layers.",
                         this);
 
                     _missingLayerErrorLogged = true;
@@ -263,15 +314,18 @@ namespace HillbillyTaxi.Player
         private static void HandleCursorState()
         {
             if (Keyboard.current != null &&
-                Keyboard.current.escapeKey.wasPressedThisFrame)
+                Keyboard.current.escapeKey
+                    .wasPressedThisFrame)
             {
                 ReleaseCursor();
                 return;
             }
 
-            if (Cursor.lockState != CursorLockMode.Locked &&
+            if (Cursor.lockState !=
+                    CursorLockMode.Locked &&
                 Mouse.current != null &&
-                Mouse.current.leftButton.wasPressedThisFrame)
+                Mouse.current.leftButton
+                    .wasPressedThisFrame)
             {
                 CaptureCursor();
             }
@@ -279,13 +333,17 @@ namespace HillbillyTaxi.Player
 
         private static void CaptureCursor()
         {
-            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.lockState =
+                CursorLockMode.Locked;
+
             Cursor.visible = false;
         }
 
         private static void ReleaseCursor()
         {
-            Cursor.lockState = CursorLockMode.None;
+            Cursor.lockState =
+                CursorLockMode.None;
+
             Cursor.visible = true;
         }
 
