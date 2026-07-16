@@ -259,7 +259,7 @@ Transform:
   m_GameObject: {fileID: 5827344354616578688}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalPosition: {x: 1.412, y: -0, z: 1.43277}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -279,7 +279,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4060153947
+  GlobalObjectIdHash: 3265722007
   InScenePlacedSourceGlobalObjectIdHash: 2549164226
   DeferredDespawnTick: 0
   Ownership: 1
@@ -446,6 +446,7 @@ MonoBehaviour:
   - {fileID: 9087509876823071110}
   renderersHiddenFromOwner:
   - {fileID: 1610855684938597536}
+  localPlayerLayerName: LocalPlayer
 --- !u!1 &9087509876823071110
 GameObject:
   m_ObjectHideFlags: 0

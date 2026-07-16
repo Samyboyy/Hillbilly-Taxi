@@ -16,17 +16,34 @@ namespace HillbillyTaxi.Player
         [Tooltip("Put the first-person camera rig and its AudioListener here.")]
         [SerializeField] private GameObject[] ownerOnlyObjects;
 
-        [Tooltip("Optional body renderers that should be hidden from the owning first-person camera.")]
+        [Tooltip(
+            "Renderers hidden from the owning gameplay camera. They remain enabled so mirrors, " +
+            "reflection cameras, and other players can still render them.")]
         [SerializeField] private Renderer[] renderersHiddenFromOwner;
+
+        [Tooltip(
+            "Create this layer in Project Settings > Tags and Layers. The owning gameplay camera " +
+            "will exclude it, while mirror/reflection cameras can include it.")]
+        [SerializeField] private string localPlayerLayerName = "LocalPlayer";
 
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
+        private Camera _ownerCamera;
+
+        private int _ownerCameraOriginalCullingMask;
+        private int[] _originalRendererLayers;
+        private int _localPlayerLayer = -1;
+
+        private bool _presentationStateCached;
         private bool _localControlEnabled;
+        private bool _missingLayerErrorLogged;
 
         private void Awake()
         {
             _inputReader = GetComponent<PlayerInputReader>();
             _motor = GetComponent<FirstPersonCharacterMotor>();
+
+            CachePresentationState();
             SetLocalControl(false);
         }
 
@@ -73,10 +90,45 @@ namespace HillbillyTaxi.Player
             _motor.Tick(input, Time.deltaTime);
         }
 
+        private void CachePresentationState()
+        {
+            if (_presentationStateCached)
+            {
+                return;
+            }
+
+            _presentationStateCached = true;
+            _ownerCamera = GetComponentInChildren<Camera>(true);
+
+            if (_ownerCamera != null)
+            {
+                _ownerCameraOriginalCullingMask = _ownerCamera.cullingMask;
+            }
+
+            if (renderersHiddenFromOwner == null)
+            {
+                _originalRendererLayers = System.Array.Empty<int>();
+            }
+            else
+            {
+                _originalRendererLayers = new int[renderersHiddenFromOwner.Length];
+
+                for (int index = 0; index < renderersHiddenFromOwner.Length; index++)
+                {
+                    Renderer targetRenderer = renderersHiddenFromOwner[index];
+                    _originalRendererLayers[index] =
+                        targetRenderer != null ? targetRenderer.gameObject.layer : 0;
+                }
+            }
+
+            _localPlayerLayer = LayerMask.NameToLayer(localPlayerLayerName);
+        }
+
         private void SetLocalControl(bool enabled)
         {
             bool previouslyHadLocalControl = _localControlEnabled;
             _localControlEnabled = enabled;
+
             _inputReader.SetInputEnabled(enabled);
             _motor.SetSimulationEnabled(enabled);
 
@@ -91,30 +143,93 @@ namespace HillbillyTaxi.Player
                 }
             }
 
-            if (renderersHiddenFromOwner != null)
-            {
-                foreach (Renderer targetRenderer in renderersHiddenFromOwner)
-                {
-                    if (targetRenderer != null)
-                    {
-                        targetRenderer.enabled = !enabled;
-                    }
-                }
-            }
+            ConfigureOwnerRendererVisibility(enabled);
 
             if (enabled)
             {
                 CaptureCursor();
             }
-            else if (previouslyHadLocalControl && Cursor.lockState == CursorLockMode.Locked)
+            else if (previouslyHadLocalControl &&
+                     Cursor.lockState == CursorLockMode.Locked)
             {
                 ReleaseCursor();
             }
         }
 
+        private void ConfigureOwnerRendererVisibility(bool isLocalOwner)
+        {
+            CachePresentationState();
+
+            if (renderersHiddenFromOwner == null ||
+                renderersHiddenFromOwner.Length == 0)
+            {
+                return;
+            }
+
+            if (!isLocalOwner)
+            {
+                RestoreRendererLayers();
+
+                if (_ownerCamera != null)
+                {
+                    _ownerCamera.cullingMask = _ownerCameraOriginalCullingMask;
+                }
+
+                return;
+            }
+
+            if (_localPlayerLayer < 0)
+            {
+                if (!_missingLayerErrorLogged)
+                {
+                    Debug.LogError(
+                        $"Layer '{localPlayerLayerName}' does not exist. Create it in " +
+                        "Project Settings > Tags and Layers so the local player can be hidden " +
+                        "from the gameplay camera while remaining visible in mirrors.",
+                        this);
+
+                    _missingLayerErrorLogged = true;
+                }
+
+                return;
+            }
+
+            foreach (Renderer targetRenderer in renderersHiddenFromOwner)
+            {
+                if (targetRenderer != null)
+                {
+                    targetRenderer.gameObject.layer = _localPlayerLayer;
+                }
+            }
+
+            if (_ownerCamera != null)
+            {
+                _ownerCamera.cullingMask =
+                    _ownerCameraOriginalCullingMask & ~(1 << _localPlayerLayer);
+            }
+        }
+
+        private void RestoreRendererLayers()
+        {
+            int count = Mathf.Min(
+                renderersHiddenFromOwner.Length,
+                _originalRendererLayers.Length);
+
+            for (int index = 0; index < count; index++)
+            {
+                Renderer targetRenderer = renderersHiddenFromOwner[index];
+
+                if (targetRenderer != null)
+                {
+                    targetRenderer.gameObject.layer = _originalRendererLayers[index];
+                }
+            }
+        }
+
         private static void HandleCursorState()
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (Keyboard.current != null &&
+                Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 ReleaseCursor();
                 return;
