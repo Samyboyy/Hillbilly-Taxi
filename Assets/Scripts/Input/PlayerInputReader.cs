@@ -79,6 +79,7 @@ namespace HillbillyTaxi.Input
 
             Vector2 look = _lookAction.ReadValue<Vector2>();
             bool jumpPressed = _jumpAction.WasPressedThisFrame();
+            bool jumpHeld = _jumpAction.IsPressed();
             bool sprintHeld = _sprintAction.IsPressed();
             bool interactPressed = _interactAction.WasPressedThisFrame();
             bool lookComesFromMouse = _lookAction.activeControl?.device is Mouse;
@@ -87,6 +88,7 @@ namespace HillbillyTaxi.Input
                 move,
                 look,
                 jumpPressed,
+                jumpHeld,
                 sprintHeld,
                 interactPressed,
                 lookComesFromMouse);

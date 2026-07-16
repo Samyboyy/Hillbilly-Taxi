@@ -6,8 +6,9 @@ using UnityEngine;
 namespace HillbillyTaxi.Player
 {
     /// <summary>
-    /// Synchronises which vehicle seat a player occupies and handles the local
-    /// seated camera. The server alone changes the seat state.
+    /// Synchronises which vehicle seat a player occupies, handles the local seated
+    /// camera, and sends driver input through the player's owned NetworkObject.
+    /// The server alone changes seat state and vehicle physics.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
@@ -23,11 +24,17 @@ namespace HillbillyTaxi.Player
         [SerializeField, Range(1f, 89f)] private float maximumPitch = 75f;
         [SerializeField, Range(1f, 180f)] private float maximumYaw = 105f;
 
+        [Header("Driver input networking")]
+        [SerializeField, Range(5f, 30f)] private float driverInputSendRate = 20f;
+        [SerializeField, Min(0f)] private float driverInputChangeThreshold = 0.02f;
+
         private readonly NetworkVariable<NetworkSeatState> _seatState =
             new NetworkVariable<NetworkSeatState>(
                 NetworkSeatState.NotSeated,
                 NetworkVariableReadPermission.Everyone,
                 NetworkVariableWritePermission.Server);
+
+        private CharacterController _characterController;
 
         private Vector3 _standingCameraLocalPosition;
         private Quaternion _standingCameraLocalRotation;
@@ -37,6 +44,10 @@ namespace HillbillyTaxi.Player
         private float _seatYaw;
         private bool _localControlEnabled;
 
+        private Vector2 _lastSentDriverMove;
+        private bool _lastSentHandbrake;
+        private float _nextDriverInputSendTime;
+
         public event Action<bool> SeatStateChanged;
 
         public bool IsSeated => _seatState.Value.IsSeated;
@@ -44,6 +55,7 @@ namespace HillbillyTaxi.Player
 
         private void Awake()
         {
+            _characterController = GetComponent<CharacterController>();
             EnsureStandingCameraPoseCached();
         }
 
@@ -75,15 +87,13 @@ namespace HillbillyTaxi.Player
                     _seatState.Value.SeatIndex);
             }
 
+            SetCharacterCollisionEnabled(true);
             RestoreStandingCamera();
             base.OnNetworkDespawn();
         }
 
         public void SetLocalControl(bool enabled)
         {
-            // NetworkPlayerCharacter can call this from its Awake before Unity has
-            // invoked our Awake. Cache the authored camera pose before doing anything
-            // that might restore it.
             EnsureStandingCameraPoseCached();
 
             _localControlEnabled = enabled;
@@ -110,6 +120,10 @@ namespace HillbillyTaxi.Player
             {
                 UpdateSeatedLook(input, deltaTime);
             }
+
+            SendDriverInputIfNeeded(
+                input.Move,
+                input.JumpHeld);
 
             if (input.InteractPressed)
             {
@@ -184,6 +198,40 @@ namespace HillbillyTaxi.Player
         }
 
         [Rpc(SendTo.Server)]
+        private void SubmitDriverInputRpc(
+            float steering,
+            float throttle,
+            bool handbrake,
+            RpcParams rpcParams = default)
+        {
+            if (rpcParams.Receive.SenderClientId != OwnerClientId ||
+                !TryResolveVehicle(
+                    _seatState.Value,
+                    out NetworkVehicle vehicle) ||
+                !vehicle.TryGetSeat(
+                    _seatState.Value.SeatIndex,
+                    out VehicleSeatDefinition seat) ||
+                seat.Role != VehicleSeatRole.Driver)
+            {
+                return;
+            }
+
+            NetworkTruckMotor motor =
+                vehicle.GetComponent<NetworkTruckMotor>();
+
+            if (motor == null)
+            {
+                return;
+            }
+
+            motor.SetDriverInputOnServer(
+                OwnerClientId,
+                steering,
+                throttle,
+                handbrake);
+        }
+
+        [Rpc(SendTo.Server)]
         private void RequestExitSeatRpc(
             RpcParams rpcParams = default)
         {
@@ -235,6 +283,48 @@ namespace HillbillyTaxi.Player
                     0f);
         }
 
+        private void SendDriverInputIfNeeded(
+            Vector2 move,
+            bool handbrake)
+        {
+            if (!TryGetCurrentSeat(
+                    out _,
+                    out VehicleSeatDefinition seat) ||
+                seat.Role != VehicleSeatRole.Driver)
+            {
+                return;
+            }
+
+            move = Vector2.ClampMagnitude(move, 1f);
+
+            float thresholdSquared =
+                driverInputChangeThreshold *
+                driverInputChangeThreshold;
+
+            bool inputChanged =
+                (move - _lastSentDriverMove).sqrMagnitude >
+                    thresholdSquared ||
+                handbrake != _lastSentHandbrake;
+
+            float now = Time.unscaledTime;
+
+            if (!inputChanged &&
+                now < _nextDriverInputSendTime)
+            {
+                return;
+            }
+
+            _lastSentDriverMove = move;
+            _lastSentHandbrake = handbrake;
+            _nextDriverInputSendTime =
+                now + 1f / Mathf.Max(1f, driverInputSendRate);
+
+            SubmitDriverInputRpc(
+                move.x,
+                move.y,
+                handbrake);
+        }
+
         private void HandleSeatStateChanged(
             NetworkSeatState previousValue,
             NetworkSeatState newValue)
@@ -265,13 +355,19 @@ namespace HillbillyTaxi.Player
                         previousSeat.ExitPoint.rotation);
                 }
 
+                SetCharacterCollisionEnabled(true);
                 RestoreStandingCamera();
             }
 
             if (isSeated)
             {
+                SetCharacterCollisionEnabled(false);
+
                 _seatPitch = 0f;
                 _seatYaw = 0f;
+                _lastSentDriverMove = Vector2.zero;
+                _lastSentHandbrake = false;
+                _nextDriverInputSendTime = 0f;
             }
 
             SeatStateChanged?.Invoke(isSeated);
@@ -317,6 +413,15 @@ namespace HillbillyTaxi.Player
                 input.Look.y * lookMultiplier,
                 -maximumPitch,
                 maximumPitch);
+        }
+
+        private void SetCharacterCollisionEnabled(bool enabled)
+        {
+            if (_characterController != null &&
+                _characterController.enabled != enabled)
+            {
+                _characterController.enabled = enabled;
+            }
         }
 
         private void RestoreStandingCamera()
@@ -378,6 +483,7 @@ namespace HillbillyTaxi.Player
 
         private void Reset()
         {
+            _characterController = GetComponent<CharacterController>();
             ResolveCameraRig();
         }
 
@@ -388,6 +494,12 @@ namespace HillbillyTaxi.Player
 
             gamepadLookSpeed =
                 Mathf.Max(0f, gamepadLookSpeed);
+
+            driverInputSendRate =
+                Mathf.Clamp(driverInputSendRate, 5f, 30f);
+
+            driverInputChangeThreshold =
+                Mathf.Max(0f, driverInputChangeThreshold);
 
             ResolveCameraRig();
         }
