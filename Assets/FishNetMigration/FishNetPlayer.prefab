@@ -243,6 +243,7 @@ GameObject:
   - component: {fileID: 2893462083908101201}
   - component: {fileID: 8763576922727717026}
   - component: {fileID: 3886276689037257486}
+  - component: {fileID: 6481881688116072992}
   m_Layer: 0
   m_Name: FishNetPlayer
   m_TagString: Untagged
@@ -480,6 +481,33 @@ MonoBehaviour:
   renderersHiddenFromOwner:
   - {fileID: 1610855684938597536}
   localPlayerLayerName: LocalPlayer
+--- !u!114 &6481881688116072992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5827344354616578688}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e8f5eaadcfe26499ee6f0d7cbc1128, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HillbillyTaxi.FishNetMigration.Interaction.FishNetPlayerInteractor
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 0}
+  interactionCamera: {fileID: 4676919398218794722}
+  promptView: {fileID: 5347864420351070710}
+  interactionDistance: 3
+  interactionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  serverDistanceTolerance: 0.75
+  serverEyeHeight: 1.25
+  requireServerLineOfSight: 1
+  serverLineOfSightLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &9087509876823071110
 GameObject:
   m_ObjectHideFlags: 0
@@ -489,6 +517,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1898951822908493462}
+  - component: {fileID: 5347864420351070710}
   m_Layer: 0
   m_Name: CameraRig
   m_TagString: Untagged
@@ -512,3 +541,18 @@ Transform:
   - {fileID: 2246407834318441288}
   m_Father: {fileID: 1112012440274137429}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5347864420351070710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9087509876823071110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cef6b8a173968574ea41304a7ba26e71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HillbillyTaxi.FishNetMigration.Interaction.FishNetInteractionPromptView
+  keyboardKeyLabel: E
+  anchoredPosition: {x: 0, y: -140}
+  panelSize: {x: 420, y: 54}

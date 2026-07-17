@@ -1,4 +1,5 @@
 using FishNet.Object;
+using HillbillyTaxi.FishNetMigration.Interaction;
 using HillbillyTaxi.Input;
 using HillbillyTaxi.Player;
 using UnityEngine;
@@ -7,29 +8,31 @@ using UnityEngine.InputSystem;
 namespace HillbillyTaxi.FishNetMigration
 {
     /// <summary>
-    /// FishNet ownership wrapper around the existing framework-neutral movement motor.
-    /// Only the owning client enables input, movement, camera, and AudioListener.
+    /// FishNet ownership wrapper around the framework-neutral movement motor.
+    /// Phase 2 also routes the owner's Interact input into the validated interaction
+    /// system.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(FirstPersonCharacterMotor))]
-    public sealed class FishNetPlayerCharacter : NetworkBehaviour
+    [RequireComponent(typeof(FishNetPlayerInteractor))]
+    public sealed class FishNetPlayerCharacter :
+        NetworkBehaviour
     {
         [Header("Owner-only presentation")]
-        [Tooltip("Put CameraRig here. It contains the gameplay camera and AudioListener.")]
         [SerializeField] private GameObject[] ownerOnlyObjects;
 
-        [Tooltip(
-            "Renderers excluded from the owning gameplay camera. They remain enabled " +
-            "for remote players and future mirror/reflection cameras.")]
-        [SerializeField] private Renderer[] renderersHiddenFromOwner;
+        [SerializeField] private Renderer[]
+            renderersHiddenFromOwner;
 
-        [SerializeField] private string localPlayerLayerName = "LocalPlayer";
+        [SerializeField] private string
+            localPlayerLayerName = "LocalPlayer";
 
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
+        private FishNetPlayerInteractor _interactor;
         private Camera _ownerCamera;
 
         private int _ownerCameraOriginalCullingMask;
@@ -42,8 +45,14 @@ namespace HillbillyTaxi.FishNetMigration
 
         private void Awake()
         {
-            _inputReader = GetComponent<PlayerInputReader>();
-            _motor = GetComponent<FirstPersonCharacterMotor>();
+            _inputReader =
+                GetComponent<PlayerInputReader>();
+
+            _motor =
+                GetComponent<FirstPersonCharacterMotor>();
+
+            _interactor =
+                GetComponent<FishNetPlayerInteractor>();
 
             CachePresentationState();
             SetLocalControl(false);
@@ -75,25 +84,40 @@ namespace HillbillyTaxi.FishNetMigration
             CharacterInputFrame input =
                 _inputReader.ReadFrame();
 
-            if (Cursor.lockState != CursorLockMode.Locked)
+            bool gameplayCursorLocked =
+                Cursor.lockState ==
+                CursorLockMode.Locked;
+
+            if (!gameplayCursorLocked)
             {
                 input = input.WithoutLook();
             }
 
-            _motor.Tick(input, Time.deltaTime);
+            _motor.Tick(
+                input,
+                Time.deltaTime);
+
+            _interactor.Tick(
+                input.InteractPressed,
+                gameplayCursorLocked);
         }
 
         private void SetLocalControl(bool enabled)
         {
-            bool previouslyEnabled = _localControlEnabled;
+            bool previouslyEnabled =
+                _localControlEnabled;
+
             _localControlEnabled = enabled;
 
             _inputReader.SetInputEnabled(enabled);
             _motor.SetSimulationEnabled(enabled);
+            _interactor.SetInteractionEnabled(enabled);
 
             if (ownerOnlyObjects != null)
             {
-                foreach (GameObject ownerOnlyObject in ownerOnlyObjects)
+                foreach (
+                    GameObject ownerOnlyObject
+                    in ownerOnlyObjects)
                 {
                     if (ownerOnlyObject != null)
                     {
@@ -108,8 +132,10 @@ namespace HillbillyTaxi.FishNetMigration
             {
                 CaptureCursor();
             }
-            else if (previouslyEnabled &&
-                     Cursor.lockState == CursorLockMode.Locked)
+            else if (
+                previouslyEnabled &&
+                Cursor.lockState ==
+                    CursorLockMode.Locked)
             {
                 ReleaseCursor();
             }
@@ -123,7 +149,9 @@ namespace HillbillyTaxi.FishNetMigration
             }
 
             _presentationCached = true;
-            _ownerCamera = GetComponentInChildren<Camera>(true);
+
+            _ownerCamera =
+                GetComponentInChildren<Camera>(true);
 
             if (_ownerCamera != null)
             {
@@ -139,24 +167,29 @@ namespace HillbillyTaxi.FishNetMigration
             else
             {
                 _originalRendererLayers =
-                    new int[renderersHiddenFromOwner.Length];
+                    new int[
+                        renderersHiddenFromOwner.Length];
 
-                for (int index = 0;
-                     index < renderersHiddenFromOwner.Length;
-                     index++)
+                for (
+                    int index = 0;
+                    index <
+                        renderersHiddenFromOwner.Length;
+                    index++)
                 {
                     Renderer targetRenderer =
                         renderersHiddenFromOwner[index];
 
                     _originalRendererLayers[index] =
                         targetRenderer != null
-                            ? targetRenderer.gameObject.layer
+                            ? targetRenderer
+                                .gameObject.layer
                             : 0;
                 }
             }
 
             _localPlayerLayer =
-                LayerMask.NameToLayer(localPlayerLayerName);
+                LayerMask.NameToLayer(
+                    localPlayerLayerName);
         }
 
         private void ConfigureOwnerRendererVisibility(
@@ -188,8 +221,7 @@ namespace HillbillyTaxi.FishNetMigration
                 if (!_missingLayerErrorLogged)
                 {
                     Debug.LogError(
-                        $"Layer '{localPlayerLayerName}' is missing. " +
-                        "Keep the existing LocalPlayer layer in Tags and Layers.",
+                        $"Layer '{localPlayerLayerName}' is missing.",
                         this);
 
                     _missingLayerErrorLogged = true;
@@ -198,7 +230,9 @@ namespace HillbillyTaxi.FishNetMigration
                 return;
             }
 
-            foreach (Renderer targetRenderer in renderersHiddenFromOwner)
+            foreach (
+                Renderer targetRenderer
+                in renderersHiddenFromOwner)
             {
                 if (targetRenderer != null)
                 {
@@ -221,7 +255,9 @@ namespace HillbillyTaxi.FishNetMigration
                 renderersHiddenFromOwner.Length,
                 _originalRendererLayers.Length);
 
-            for (int index = 0; index < count; index++)
+            for (int index = 0;
+                 index < count;
+                 index++)
             {
                 Renderer targetRenderer =
                     renderersHiddenFromOwner[index];
@@ -237,15 +273,18 @@ namespace HillbillyTaxi.FishNetMigration
         private static void HandleCursorState()
         {
             if (Keyboard.current != null &&
-                Keyboard.current.escapeKey.wasPressedThisFrame)
+                Keyboard.current.escapeKey
+                    .wasPressedThisFrame)
             {
                 ReleaseCursor();
                 return;
             }
 
-            if (Cursor.lockState != CursorLockMode.Locked &&
+            if (Cursor.lockState !=
+                    CursorLockMode.Locked &&
                 Mouse.current != null &&
-                Mouse.current.leftButton.wasPressedThisFrame)
+                Mouse.current.leftButton
+                    .wasPressedThisFrame)
             {
                 CaptureCursor();
             }
@@ -253,13 +292,17 @@ namespace HillbillyTaxi.FishNetMigration
 
         private static void CaptureCursor()
         {
-            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.lockState =
+                CursorLockMode.Locked;
+
             Cursor.visible = false;
         }
 
         private static void ReleaseCursor()
         {
-            Cursor.lockState = CursorLockMode.None;
+            Cursor.lockState =
+                CursorLockMode.None;
+
             Cursor.visible = true;
         }
 
