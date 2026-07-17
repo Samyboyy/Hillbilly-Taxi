@@ -1,45 +1,42 @@
+using FishNet.Object;
 using HillbillyTaxi.Input;
-using HillbillyTaxi.Interaction;
-using Unity.Netcode;
+using HillbillyTaxi.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace HillbillyTaxi.Player
+namespace HillbillyTaxi.FishNetMigration
 {
+    /// <summary>
+    /// FishNet ownership wrapper around the existing framework-neutral movement motor.
+    /// Only the owning client enables input, movement, camera, and AudioListener.
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(FirstPersonCharacterMotor))]
-    [RequireComponent(typeof(NetworkPlayerInteractor))]
-    [RequireComponent(typeof(NetworkPlayerSeatController))]
-    public sealed class NetworkPlayerCharacter : NetworkBehaviour
+    public sealed class FishNetPlayerCharacter : NetworkBehaviour
     {
         [Header("Owner-only presentation")]
-        [Tooltip("Put the first-person camera rig and its AudioListener here.")]
+        [Tooltip("Put CameraRig here. It contains the gameplay camera and AudioListener.")]
         [SerializeField] private GameObject[] ownerOnlyObjects;
 
         [Tooltip(
-            "Renderers hidden from the owning gameplay camera. They remain enabled " +
-            "so mirrors, reflection cameras, and other players can still render them.")]
+            "Renderers excluded from the owning gameplay camera. They remain enabled " +
+            "for remote players and future mirror/reflection cameras.")]
         [SerializeField] private Renderer[] renderersHiddenFromOwner;
 
-        [Tooltip(
-            "The owning gameplay camera excludes this layer, while mirror and " +
-            "reflection cameras can include it.")]
         [SerializeField] private string localPlayerLayerName = "LocalPlayer";
 
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
-        private NetworkPlayerInteractor _interactor;
-        private NetworkPlayerSeatController _seatController;
         private Camera _ownerCamera;
 
         private int _ownerCameraOriginalCullingMask;
         private int[] _originalRendererLayers;
         private int _localPlayerLayer = -1;
 
-        private bool _presentationStateCached;
+        private bool _presentationCached;
         private bool _localControlEnabled;
         private bool _missingLayerErrorLogged;
 
@@ -47,55 +44,26 @@ namespace HillbillyTaxi.Player
         {
             _inputReader = GetComponent<PlayerInputReader>();
             _motor = GetComponent<FirstPersonCharacterMotor>();
-            _interactor = GetComponent<NetworkPlayerInteractor>();
-            _seatController =
-                GetComponent<NetworkPlayerSeatController>();
-
-            _seatController.SeatStateChanged +=
-                HandleSeatStateChanged;
 
             CachePresentationState();
             SetLocalControl(false);
         }
 
-        public override void OnDestroy()
+        public override void OnStartClient()
         {
-            if (_seatController != null)
-            {
-                _seatController.SeatStateChanged -=
-                    HandleSeatStateChanged;
-            }
-
-            base.OnDestroy();
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
+            base.OnStartClient();
             SetLocalControl(IsOwner);
         }
 
-        public override void OnNetworkDespawn()
+        public override void OnStopClient()
         {
             SetLocalControl(false);
-            base.OnNetworkDespawn();
-        }
-
-        public override void OnGainedOwnership()
-        {
-            base.OnGainedOwnership();
-            SetLocalControl(true);
-        }
-
-        public override void OnLostOwnership()
-        {
-            SetLocalControl(false);
-            base.OnLostOwnership();
+            base.OnStopClient();
         }
 
         private void Update()
         {
-            if (!IsSpawned ||
+            if (!IsClientInitialized ||
                 !IsOwner ||
                 !_localControlEnabled)
             {
@@ -107,48 +75,25 @@ namespace HillbillyTaxi.Player
             CharacterInputFrame input =
                 _inputReader.ReadFrame();
 
-            bool gameplayCursorLocked =
-                Cursor.lockState ==
-                CursorLockMode.Locked;
-
-            if (!gameplayCursorLocked)
+            if (Cursor.lockState != CursorLockMode.Locked)
             {
                 input = input.WithoutLook();
             }
 
-            if (_seatController.IsSeated)
-            {
-                _seatController.TickOwnerInput(
-                    input,
-                    Time.deltaTime,
-                    gameplayCursorLocked);
-
-                return;
-            }
-
             _motor.Tick(input, Time.deltaTime);
-
-            _interactor.Tick(
-                input.InteractPressed,
-                gameplayCursorLocked);
         }
 
         private void SetLocalControl(bool enabled)
         {
-            bool previouslyHadLocalControl =
-                _localControlEnabled;
-
+            bool previouslyEnabled = _localControlEnabled;
             _localControlEnabled = enabled;
 
             _inputReader.SetInputEnabled(enabled);
-            _seatController.SetLocalControl(enabled);
-            ApplyGameplayMode();
+            _motor.SetSimulationEnabled(enabled);
 
             if (ownerOnlyObjects != null)
             {
-                foreach (
-                    GameObject ownerOnlyObject
-                    in ownerOnlyObjects)
+                foreach (GameObject ownerOnlyObject in ownerOnlyObjects)
                 {
                     if (ownerOnlyObject != null)
                     {
@@ -163,40 +108,22 @@ namespace HillbillyTaxi.Player
             {
                 CaptureCursor();
             }
-            else if (
-                previouslyHadLocalControl &&
-                Cursor.lockState ==
-                    CursorLockMode.Locked)
+            else if (previouslyEnabled &&
+                     Cursor.lockState == CursorLockMode.Locked)
             {
                 ReleaseCursor();
             }
         }
 
-        private void HandleSeatStateChanged(bool isSeated)
-        {
-            ApplyGameplayMode();
-        }
-
-        private void ApplyGameplayMode()
-        {
-            bool canWalk =
-                _localControlEnabled &&
-                !_seatController.IsSeated;
-
-            _motor.SetSimulationEnabled(canWalk);
-            _interactor.SetInteractionEnabled(canWalk);
-        }
-
         private void CachePresentationState()
         {
-            if (_presentationStateCached)
+            if (_presentationCached)
             {
                 return;
             }
 
-            _presentationStateCached = true;
-            _ownerCamera =
-                GetComponentInChildren<Camera>(true);
+            _presentationCached = true;
+            _ownerCamera = GetComponentInChildren<Camera>(true);
 
             if (_ownerCamera != null)
             {
@@ -212,14 +139,11 @@ namespace HillbillyTaxi.Player
             else
             {
                 _originalRendererLayers =
-                    new int[
-                        renderersHiddenFromOwner.Length];
+                    new int[renderersHiddenFromOwner.Length];
 
-                for (
-                    int index = 0;
-                    index <
-                        renderersHiddenFromOwner.Length;
-                    index++)
+                for (int index = 0;
+                     index < renderersHiddenFromOwner.Length;
+                     index++)
                 {
                     Renderer targetRenderer =
                         renderersHiddenFromOwner[index];
@@ -232,8 +156,7 @@ namespace HillbillyTaxi.Player
             }
 
             _localPlayerLayer =
-                LayerMask.NameToLayer(
-                    localPlayerLayerName);
+                LayerMask.NameToLayer(localPlayerLayerName);
         }
 
         private void ConfigureOwnerRendererVisibility(
@@ -265,8 +188,8 @@ namespace HillbillyTaxi.Player
                 if (!_missingLayerErrorLogged)
                 {
                     Debug.LogError(
-                        $"Layer '{localPlayerLayerName}' does not exist. " +
-                        "Create it in Project Settings > Tags and Layers.",
+                        $"Layer '{localPlayerLayerName}' is missing. " +
+                        "Keep the existing LocalPlayer layer in Tags and Layers.",
                         this);
 
                     _missingLayerErrorLogged = true;
@@ -275,9 +198,7 @@ namespace HillbillyTaxi.Player
                 return;
             }
 
-            foreach (
-                Renderer targetRenderer
-                in renderersHiddenFromOwner)
+            foreach (Renderer targetRenderer in renderersHiddenFromOwner)
             {
                 if (targetRenderer != null)
                 {
@@ -316,18 +237,15 @@ namespace HillbillyTaxi.Player
         private static void HandleCursorState()
         {
             if (Keyboard.current != null &&
-                Keyboard.current.escapeKey
-                    .wasPressedThisFrame)
+                Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 ReleaseCursor();
                 return;
             }
 
-            if (Cursor.lockState !=
-                    CursorLockMode.Locked &&
+            if (Cursor.lockState != CursorLockMode.Locked &&
                 Mouse.current != null &&
-                Mouse.current.leftButton
-                    .wasPressedThisFrame)
+                Mouse.current.leftButton.wasPressedThisFrame)
             {
                 CaptureCursor();
             }
@@ -335,23 +253,21 @@ namespace HillbillyTaxi.Player
 
         private static void CaptureCursor()
         {
-            Cursor.lockState =
-                CursorLockMode.Locked;
-
+            Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
         private static void ReleaseCursor()
         {
-            Cursor.lockState =
-                CursorLockMode.None;
-
+            Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if (hasFocus && IsSpawned && IsOwner)
+            if (hasFocus &&
+                IsClientInitialized &&
+                IsOwner)
             {
                 CaptureCursor();
             }
