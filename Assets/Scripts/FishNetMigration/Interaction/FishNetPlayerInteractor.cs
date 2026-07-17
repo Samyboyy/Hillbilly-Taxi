@@ -313,8 +313,9 @@ namespace HillbillyTaxi.FishNetMigration.Interaction
             promptView?.Hide();
         }
 
-        private void Reset()
+        protected override void Reset()
         {
+            base.Reset();
             interactionCamera =
                 GetComponentInChildren<Camera>(true);
 
@@ -324,8 +325,9 @@ namespace HillbillyTaxi.FishNetMigration.Interaction
                     true);
         }
 
-        private void OnValidate()
+        protected override void OnValidate()
         {
+            base.OnValidate();
             interactionDistance =
                 Mathf.Max(0.1f, interactionDistance);
 

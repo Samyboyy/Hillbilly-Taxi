@@ -125,14 +125,16 @@ namespace HillbillyTaxi.FishNetMigration.Interaction
                 _propertyBlock);
         }
 
-        private void Reset()
+        protected override void Reset()
         {
+            base.Reset();
             targetRenderer =
                 GetComponentInChildren<Renderer>();
         }
 
-        private void OnValidate()
+        protected override void OnValidate()
         {
+            base.OnValidate();
             if (targetRenderer == null)
             {
                 targetRenderer =
