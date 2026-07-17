@@ -1,5 +1,6 @@
 using FishNet.Object;
 using HillbillyTaxi.FishNetMigration.Interaction;
+using HillbillyTaxi.FishNetMigration.Player;
 using HillbillyTaxi.Input;
 using HillbillyTaxi.Player;
 using UnityEngine;
@@ -9,8 +10,7 @@ namespace HillbillyTaxi.FishNetMigration
 {
     /// <summary>
     /// FishNet ownership wrapper around the framework-neutral movement motor.
-    /// Phase 2 also routes the owner's Interact input into the validated interaction
-    /// system.
+    /// Phase 3 routes input between walking, world interaction, and seated control.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
@@ -18,6 +18,7 @@ namespace HillbillyTaxi.FishNetMigration
     [RequireComponent(typeof(PlayerInputReader))]
     [RequireComponent(typeof(FirstPersonCharacterMotor))]
     [RequireComponent(typeof(FishNetPlayerInteractor))]
+    [RequireComponent(typeof(FishNetPlayerSeatController))]
     public sealed class FishNetPlayerCharacter :
         NetworkBehaviour
     {
@@ -33,6 +34,7 @@ namespace HillbillyTaxi.FishNetMigration
         private PlayerInputReader _inputReader;
         private FirstPersonCharacterMotor _motor;
         private FishNetPlayerInteractor _interactor;
+        private FishNetPlayerSeatController _seatController;
         private Camera _ownerCamera;
 
         private int _ownerCameraOriginalCullingMask;
@@ -41,6 +43,8 @@ namespace HillbillyTaxi.FishNetMigration
 
         private bool _presentationCached;
         private bool _localControlEnabled;
+        private bool _gameplayModeApplied;
+        private bool _lastCanWalkAndInteract;
         private bool _missingLayerErrorLogged;
 
         private void Awake()
@@ -53,6 +57,9 @@ namespace HillbillyTaxi.FishNetMigration
 
             _interactor =
                 GetComponent<FishNetPlayerInteractor>();
+
+            _seatController =
+                GetComponent<FishNetPlayerSeatController>();
 
             CachePresentationState();
             SetLocalControl(false);
@@ -80,6 +87,7 @@ namespace HillbillyTaxi.FishNetMigration
             }
 
             HandleCursorState();
+            ApplyGameplayMode();
 
             CharacterInputFrame input =
                 _inputReader.ReadFrame();
@@ -91,6 +99,16 @@ namespace HillbillyTaxi.FishNetMigration
             if (!gameplayCursorLocked)
             {
                 input = input.WithoutLook();
+            }
+
+            if (_seatController.IsSeated)
+            {
+                _seatController.TickOwnerInput(
+                    input,
+                    Time.deltaTime,
+                    gameplayCursorLocked);
+
+                return;
             }
 
             _motor.Tick(
@@ -110,8 +128,9 @@ namespace HillbillyTaxi.FishNetMigration
             _localControlEnabled = enabled;
 
             _inputReader.SetInputEnabled(enabled);
-            _motor.SetSimulationEnabled(enabled);
-            _interactor.SetInteractionEnabled(enabled);
+            _seatController.SetLocalControl(enabled);
+
+            ApplyGameplayMode();
 
             if (ownerOnlyObjects != null)
             {
@@ -139,6 +158,33 @@ namespace HillbillyTaxi.FishNetMigration
             {
                 ReleaseCursor();
             }
+        }
+
+        private void ApplyGameplayMode()
+        {
+            bool canWalkAndInteract =
+                _localControlEnabled &&
+                !_seatController.IsSeated;
+
+            // SetSimulationEnabled deliberately clears movement velocity whenever
+            // gameplay mode changes. Calling it every Update would therefore reset
+            // acceleration every frame and make ordinary walking extremely slow.
+            if (_gameplayModeApplied &&
+                _lastCanWalkAndInteract ==
+                    canWalkAndInteract)
+            {
+                return;
+            }
+
+            _gameplayModeApplied = true;
+            _lastCanWalkAndInteract =
+                canWalkAndInteract;
+
+            _motor.SetSimulationEnabled(
+                canWalkAndInteract);
+
+            _interactor.SetInteractionEnabled(
+                canWalkAndInteract);
         }
 
         private void CachePresentationState()
@@ -181,8 +227,7 @@ namespace HillbillyTaxi.FishNetMigration
 
                     _originalRendererLayers[index] =
                         targetRenderer != null
-                            ? targetRenderer
-                                .gameObject.layer
+                            ? targetRenderer.gameObject.layer
                             : 0;
                 }
             }
