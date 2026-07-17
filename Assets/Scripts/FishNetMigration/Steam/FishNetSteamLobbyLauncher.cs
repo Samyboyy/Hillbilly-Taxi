@@ -24,6 +24,10 @@ namespace HillbillyTaxi.FishNetMigration.Steam
 
         [SerializeField] private string localAddress = "localhost";
 
+        [Header("Offline menu background")]
+        [SerializeField] private bool drawOpaqueOfflineBackground = true;
+        [SerializeField] private Color offlineBackgroundColor = Color.black;
+
         private Vector2 _browserScroll;
         private Vector2 _memberScroll;
 
@@ -34,6 +38,13 @@ namespace HillbillyTaxi.FishNetMigration.Steam
                 return;
             }
 
+            bool networkRunning =
+                InstanceFinder.IsClientStarted ||
+                InstanceFinder.IsServerStarted;
+
+            DrawOfflineMenuBackground(
+                networkRunning);
+
             GUILayout.BeginArea(
                 new Rect(12f, 12f, 520f, 690f),
                 GUI.skin.box);
@@ -43,10 +54,6 @@ namespace HillbillyTaxi.FishNetMigration.Steam
 
             DrawModeTabs();
             GUILayout.Space(8f);
-
-            bool networkRunning =
-                InstanceFinder.IsClientStarted ||
-                InstanceFinder.IsServerStarted;
 
             if (lobbyService.IsInLobby)
             {
@@ -70,6 +77,42 @@ namespace HillbillyTaxi.FishNetMigration.Steam
             GUILayout.Label($"Status: {lobbyService.Status}");
 
             GUILayout.EndArea();
+        }
+
+        private void DrawOfflineMenuBackground(
+            bool networkRunning)
+        {
+            if (!drawOpaqueOfflineBackground ||
+                networkRunning ||
+                lobbyService.IsInLobby ||
+                Event.current.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            // The Steam overlay can leave its last composed image in the
+            // backbuffer on some Windows/GPU configurations when the offline
+            // menu has no gameplay camera. Drawing a full opaque menu
+            // background through IMGUI does not depend on camera clearing or
+            // render-pipeline behaviour.
+            Color previousColor =
+                GUI.color;
+
+            GUI.color =
+                offlineBackgroundColor;
+
+            GUI.DrawTexture(
+                new Rect(
+                    0f,
+                    0f,
+                    Screen.width,
+                    Screen.height),
+                Texture2D.whiteTexture,
+                ScaleMode.StretchToFill,
+                alphaBlend: false);
+
+            GUI.color =
+                previousColor;
         }
 
         private void DrawModeTabs()
