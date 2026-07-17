@@ -1,0 +1,40 @@
+﻿HILLBILLY TAXI — PRODUCTION TRUCK INTEGRATION V2
+==================================================================
+Generated: 2026-07-17 18:57:53
+Vehicle root: FishNet Test Pickup Seat Rig
+Integration version: 2
+Configuration current: True
+
+AUTHORITATIVE PHYSICS
+------------------------------------------------------------------
+Rigidbody mass: 2450 kg
+Centre of mass: (0.00, 0.50, 0.05)
+Physical body colliders: 3
+Wheel set complete: True
+All wheels attached to body: True
+Front Left: radius 0.556, travel 0.36, spring 37000, damper 5000, attached True
+Front Right: radius 0.556, travel 0.36, spring 37000, damper 5000, attached True
+Rear Left: radius 0.556, travel 0.36, spring 34000, damper 4500, attached True
+Rear Right: radius 0.556, travel 0.36, spring 34000, damper 4500, attached True
+
+APPROVED HANDLING BASELINE
+------------------------------------------------------------------
+Maximum forward speed: 36
+Forward torque: 3900
+Front anti-roll: 5000
+Rear anti-roll: 3300
+Downforce per m/s: 6
+
+GAMEPLAY REFERENCES
+------------------------------------------------------------------
+Production visual root: FishNet Test Pickup Seat Rig/Production Truck Integration
+Production physics root: FishNet Test Pickup Seat Rig/Production Truck Physics
+Body collider root: FishNet Test Pickup Seat Rig/Production Truck Body Colliders
+Seat camera root: FishNet Test Pickup Seat Rig/Production Truck Seat Cameras
+Hood: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Hood
+Tailgate: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Tailgate
+Taxi passenger seat: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_TaxiPassenger/Seat_TaxiPassenger_Pelvis
+Engine repair anchor: <not authored>
+Fuel anchor: <not authored>
+
+FINAL INTEGRATION RESULT: PASS

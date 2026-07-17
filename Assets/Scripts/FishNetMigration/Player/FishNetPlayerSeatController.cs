@@ -13,6 +13,10 @@ namespace HillbillyTaxi.FishNetMigration.Player
     /// The server alone changes seat state. While the owner occupies the Driver
     /// seat this component also rate-limits and submits driving input through the
     /// player's owned NetworkObject.
+    ///
+    /// The local camera rig is temporarily parented to the active seat camera
+    /// anchor. This avoids enormous local offsets caused by assigning a world
+    /// pose while the camera remains parented to the moving player hierarchy.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
@@ -51,9 +55,13 @@ namespace HillbillyTaxi.FishNetMigration.Player
 
         private CharacterController _characterController;
 
+        private Transform _standingCameraParent;
+        private int _standingCameraSiblingIndex;
         private Vector3 _standingCameraLocalPosition;
         private Quaternion _standingCameraLocalRotation;
+        private Vector3 _standingCameraLocalScale;
         private bool _standingCameraPoseCached;
+        private bool _cameraAttachedToSeat;
 
         private float _seatPitch;
         private float _seatYaw;
@@ -92,6 +100,8 @@ namespace HillbillyTaxi.FishNetMigration.Player
 
         private void OnDestroy()
         {
+            RestoreStandingCamera();
+
             _currentVehicleObject.OnChange -=
                 HandleVehicleChanged;
 
@@ -133,6 +143,16 @@ namespace HillbillyTaxi.FishNetMigration.Player
             if (!enabled)
             {
                 RestoreStandingCamera();
+                return;
+            }
+
+            if (IsSeated &&
+                TryGetCurrentSeat(
+                    out _,
+                    out FishNetVehicleSeatDefinition seat))
+            {
+                AttachCameraToSeat(
+                    seat.CameraAnchor);
             }
         }
 
@@ -230,8 +250,8 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 return;
             }
 
-            // Preserve the vehicle reference for the first callback so clients can
-            // resolve the correct moving door-side exit point.
+            // Preserve the vehicle reference for the first callback so clients
+            // can resolve the moving door-side exit point.
             _currentSeatIndex.Value = -1;
             _currentVehicleObject.Value = null;
         }
@@ -288,12 +308,24 @@ namespace HillbillyTaxi.FishNetMigration.Player
 
         private void LateUpdate()
         {
-            if (!IsSpawned ||
-                !IsSeated ||
+            if (!IsSpawned)
+            {
+                return;
+            }
+
+            if (!IsSeated ||
                 !TryGetCurrentSeat(
                     out _,
                     out FishNetVehicleSeatDefinition seat))
             {
+                // FishNet publishes the seat index and vehicle as separate
+                // SyncVars. Always force the local camera back to its standing
+                // hierarchy whenever either one says we are no longer seated.
+                if (_cameraAttachedToSeat)
+                {
+                    RestoreStandingCamera();
+                }
+
                 return;
             }
 
@@ -311,15 +343,20 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 return;
             }
 
-            cameraRig.position =
-                seat.CameraAnchor.position;
+            AttachCameraToSeat(
+                seat.CameraAnchor);
 
-            cameraRig.rotation =
-                seat.CameraAnchor.rotation *
+            cameraRig.localPosition =
+                Vector3.zero;
+
+            cameraRig.localRotation =
                 Quaternion.Euler(
                     _seatPitch,
                     _seatYaw,
                     0f);
+
+            cameraRig.localScale =
+                Vector3.one;
         }
 
         private void SendDriverInputIfNeeded(
@@ -438,29 +475,37 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 _lastSentHandbrake = false;
                 _nextDriverInputSendTime = 0f;
 
+                if (_localControlEnabled &&
+                    IsOwner &&
+                    vehicle.TryGetSeat(
+                        seatIndex,
+                        out FishNetVehicleSeatDefinition seat))
+                {
+                    AttachCameraToSeat(
+                        seat.CameraAnchor);
+                }
+
                 SeatStateChanged?.Invoke(true);
             }
         }
 
         private void ApplyStandingPresentation()
         {
-            if (!_presentationSeated)
-            {
-                SetCharacterCollisionEnabled(true);
-                return;
-            }
-
             FishNetVehicle previousVehicle =
                 _presentationVehicle;
 
             int previousSeatIndex =
                 _presentationSeatIndex;
 
+            bool wasSeated =
+                _presentationSeated;
+
             _presentationSeated = false;
             _presentationVehicle = null;
             _presentationSeatIndex = -1;
 
-            if (previousVehicle != null &&
+            if (wasSeated &&
+                previousVehicle != null &&
                 previousVehicle.TryGetSeat(
                     previousSeatIndex,
                     out FishNetVehicleSeatDefinition previousSeat))
@@ -471,9 +516,16 @@ namespace HillbillyTaxi.FishNetMigration.Player
             }
 
             SetCharacterCollisionEnabled(true);
+
+            // Do this even when the first SyncVar callback already changed
+            // _presentationSeated. It makes the second callback idempotently
+            // restore the standing camera rather than leaving a seated offset.
             RestoreStandingCamera();
 
-            SeatStateChanged?.Invoke(false);
+            if (wasSeated)
+            {
+                SeatStateChanged?.Invoke(false);
+            }
         }
 
         private FishNetVehicle GetSynchronizedVehicle()
@@ -518,6 +570,40 @@ namespace HillbillyTaxi.FishNetMigration.Player
             }
         }
 
+        private void AttachCameraToSeat(
+            Transform seatCameraAnchor)
+        {
+            EnsureStandingCameraPoseCached();
+
+            if (cameraRig == null ||
+                seatCameraAnchor == null)
+            {
+                return;
+            }
+
+            if (cameraRig.parent !=
+                seatCameraAnchor)
+            {
+                cameraRig.SetParent(
+                    seatCameraAnchor,
+                    worldPositionStays: false);
+            }
+
+            cameraRig.localPosition =
+                Vector3.zero;
+
+            cameraRig.localRotation =
+                Quaternion.Euler(
+                    _seatPitch,
+                    _seatYaw,
+                    0f);
+
+            cameraRig.localScale =
+                Vector3.one;
+
+            _cameraAttachedToSeat = true;
+        }
+
         private void RestoreStandingCamera()
         {
             EnsureStandingCameraPoseCached();
@@ -528,11 +614,38 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 return;
             }
 
+            if (cameraRig.parent !=
+                _standingCameraParent)
+            {
+                cameraRig.SetParent(
+                    _standingCameraParent,
+                    worldPositionStays: false);
+            }
+
+            if (_standingCameraParent != null)
+            {
+                int maximumIndex =
+                    Mathf.Max(
+                        0,
+                        _standingCameraParent.childCount - 1);
+
+                cameraRig.SetSiblingIndex(
+                    Mathf.Clamp(
+                        _standingCameraSiblingIndex,
+                        0,
+                        maximumIndex));
+            }
+
             cameraRig.localPosition =
                 _standingCameraLocalPosition;
 
             cameraRig.localRotation =
                 _standingCameraLocalRotation;
+
+            cameraRig.localScale =
+                _standingCameraLocalScale;
+
+            _cameraAttachedToSeat = false;
         }
 
         private void EnsureStandingCameraPoseCached()
@@ -549,11 +662,20 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 return;
             }
 
+            _standingCameraParent =
+                cameraRig.parent;
+
+            _standingCameraSiblingIndex =
+                cameraRig.GetSiblingIndex();
+
             _standingCameraLocalPosition =
                 cameraRig.localPosition;
 
             _standingCameraLocalRotation =
                 cameraRig.localRotation;
+
+            _standingCameraLocalScale =
+                cameraRig.localScale;
 
             _standingCameraPoseCached = true;
         }

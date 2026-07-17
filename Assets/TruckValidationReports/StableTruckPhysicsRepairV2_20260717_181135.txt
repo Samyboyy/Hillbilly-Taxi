@@ -1,0 +1,54 @@
+﻿HILLBILLY TAXI — STABLE TRUCK PHYSICS REPAIR V2
+================================================================
+Generated: 2026-07-17 18:11:35
+Previous WheelColliders removed: 8
+  - FishNet Test Pickup Seat Rig/Vehicle Physics/Front Left WheelCollider
+  - FishNet Test Pickup Seat Rig/Vehicle Physics/Front Right WheelCollider
+  - FishNet Test Pickup Seat Rig/Vehicle Physics/Rear Left WheelCollider
+  - FishNet Test Pickup Seat Rig/Vehicle Physics/Rear Right WheelCollider
+  - FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FL/Steer_FL/Wheel_FL_Rotation
+  - FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FR/Steer_FR/Wheel_FR_Rotation
+  - FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RL/Wheel_RL_Rotation
+  - FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RR/Wheel_RR_Rotation
+Imported COL_* colliders removed: 15
+Rigidbody mass: 2450 kg
+Centre of mass: (0.00, 0.42, 0.05)
+
+Front Left:
+  Path: FishNet Test Pickup Seat Rig/Production WheelColliders - Stable/Production WheelCollider FL
+  Local position: (-1.00, 0.72, 2.14)
+  Radius: 0.556
+  Suspension: 0.32
+  Attached Rigidbody: FishNet Test Pickup Seat Rig
+  Attachment correct: True
+Front Right:
+  Path: FishNet Test Pickup Seat Rig/Production WheelColliders - Stable/Production WheelCollider FR
+  Local position: (1.00, 0.72, 2.14)
+  Radius: 0.556
+  Suspension: 0.32
+  Attached Rigidbody: FishNet Test Pickup Seat Rig
+  Attachment correct: True
+Rear Left:
+  Path: FishNet Test Pickup Seat Rig/Production WheelColliders - Stable/Production WheelCollider RL
+  Local position: (-1.00, 0.72, -2.14)
+  Radius: 0.556
+  Suspension: 0.32
+  Attached Rigidbody: FishNet Test Pickup Seat Rig
+  Attachment correct: True
+Rear Right:
+  Path: FishNet Test Pickup Seat Rig/Production WheelColliders - Stable/Production WheelCollider RR
+  Local position: (1.00, 0.72, -2.14)
+  Radius: 0.556
+  Suspension: 0.32
+  Attached Rigidbody: FishNet Test Pickup Seat Rig
+  Attachment correct: True
+
+ALL FOUR ATTACHED TO ROOT RIGIDBODY: True
+
+FIRST RETEST ONLY:
+1. No attached-Rigidbody WheelCollider errors.
+2. Truck remains at (6, 0, 4).
+3. Truck settles rather than launching.
+4. Production art remains visible and aligned.
+5. Driver entry works.
+6. Slow acceleration and steering work.

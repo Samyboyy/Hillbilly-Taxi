@@ -1,0 +1,34 @@
+﻿HILLBILLY TAXI — SEAT CAMERA + SPEED HOTFIX
+============================================================
+Generated: 2026-07-17 18:26:18
+Seats repaired: 4
+
+Seat 0 camera:
+  Path: FishNet Test Pickup Seat Rig/Production Seat Cameras - Safe/Safe Camera - Driver
+  Local position: (-0.57, 1.68, 0.53)
+  Local rotation: (0.00, 0.00, 0.00)
+Seat 1 camera:
+  Path: FishNet Test Pickup Seat Rig/Production Seat Cameras - Safe/Safe Camera - Front Right
+  Local position: (0.57, 1.68, 0.53)
+  Local rotation: (0.00, 0.00, 0.00)
+Seat 2 camera:
+  Path: FishNet Test Pickup Seat Rig/Production Seat Cameras - Safe/Safe Camera - Rear Left
+  Local position: (-0.57, 1.65, -0.46)
+  Local rotation: (0.00, 0.00, 0.00)
+Seat 3 camera:
+  Path: FishNet Test Pickup Seat Rig/Production Seat Cameras - Safe/Safe Camera - Rear Right
+  Local position: (0.57, 1.65, -0.46)
+  Local rotation: (0.00, 0.00, 0.00)
+
+MOTOR
+------------------------------------------------------------
+Maximum forward speed: 30
+Maximum reverse speed: 11
+Forward motor torque: 3000
+Handbrake torque: 9000
+
+Expected behaviour:
+• Entering a seat parents the local camera rig to its safe camera anchor at local position (0, 0, 0).
+• Exiting reparents the camera rig to its original player parent and restores its exact standing local pose.
+• The camera must not remain at Y=-105.
+• The truck now targets 30 m/s (~67 mph) with more torque.

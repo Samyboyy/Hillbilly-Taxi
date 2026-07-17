@@ -1,0 +1,347 @@
+﻿HILLBILLY TAXI — TRUCK IMPORT VALIDATION
+==========================================================
+Generated: 2026-07-17 17:11:32
+Selected root: Truck_RuntimeVisual 1
+Asset path: Assets/Vehicles/Truck/Truck_RuntimeVisual 1.prefab
+Objects inspected: 249
+
+MODEL IMPORTER
+----------------------------------------------------------
+Selected asset is not controlled by a ModelImporter.
+
+DOOR / GLASS / COLLISION THREE-WAY CHECK
+----------------------------------------------------------
+
+[FL]
+  Door_FL: FOUND
+  Role: VISIBLE DOOR
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_FL
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Door_FL
+  Vertices: 2040
+  Triangles: 940
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: On
+  Receive Shadows: True
+  Material slots: 5
+    [0] HT_Body_Tan_Alt | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [1] HT_Faded_Green | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [2] HT_Interior | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [3] HT_Trim_Black | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [4] HT_Chrome_Aged | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0.0103, 0.0088, 0.012)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: visual door renderer is present.
+  Glass_FL: FOUND
+  Role: VISIBLE GLASS
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_FL/Glass_FL
+  Immediate parent: Door_FL
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Glass_FL
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Glass_Dark_URP | Shader: Universal Render Pipeline/Lit | Queue: 3000 | Transparent: True
+  Local Position: (0.0001, -0.0051, 0.0006)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  Parent relationship: PASS
+  Expected immediate parent: Door_FL
+  Transparent Unity material detected: YES
+  COL_Door_FL: FOUND
+  Role: COLLISION PROXY
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/COL_Door_FL
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: COL_Door_FL
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: False
+  Expected runtime visibility: False
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Debug_Col | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0, 0, 0)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: collision mesh data is retained.
+  RESULT: collision renderer is already hidden.
+
+[FR]
+  Door_FR: FOUND
+  Role: VISIBLE DOOR
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_FR
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Door_FR
+  Vertices: 2040
+  Triangles: 940
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: On
+  Receive Shadows: True
+  Material slots: 6
+    [0] HT_Body_Tan | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [1] HT_Body_Tan_Alt | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [2] HT_Faded_Green | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [3] HT_Interior | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [4] HT_Trim_Black | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [5] HT_Chrome_Aged | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (-0.0103, 0.0088, 0.012)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: visual door renderer is present.
+  Glass_FR: FOUND
+  Role: VISIBLE GLASS
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_FR/Glass_FR
+  Immediate parent: Door_FR
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Glass_FR
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Glass_Dark_URP | Shader: Universal Render Pipeline/Lit | Queue: 3000 | Transparent: True
+  Local Position: (-0.0001, -0.0051, 0.0006)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  Parent relationship: PASS
+  Expected immediate parent: Door_FR
+  Transparent Unity material detected: YES
+  COL_Door_FR: FOUND
+  Role: COLLISION PROXY
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/COL_Door_FR
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: COL_Door_FR
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: False
+  Expected runtime visibility: False
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Debug_Col | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0, 0, 0)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: collision mesh data is retained.
+  RESULT: collision renderer is already hidden.
+
+[RL]
+  Door_RL: FOUND
+  Role: VISIBLE DOOR
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_RL
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Door_RL
+  Vertices: 2040
+  Triangles: 940
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: On
+  Receive Shadows: True
+  Material slots: 6
+    [0] HT_Body_Tan | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [1] HT_Body_Tan_Alt | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [2] HT_Faded_Green | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [3] HT_Interior | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [4] HT_Trim_Black | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [5] HT_Chrome_Aged | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0.0103, -0.0031, 0.012)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: visual door renderer is present.
+  Glass_RL: FOUND
+  Role: VISIBLE GLASS
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_RL/Glass_RL
+  Immediate parent: Door_RL
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Glass_RL
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Glass_Dark_URP | Shader: Universal Render Pipeline/Lit | Queue: 3000 | Transparent: True
+  Local Position: (0.0001, -0.004, 0.0006)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  Parent relationship: PASS
+  Expected immediate parent: Door_RL
+  Transparent Unity material detected: YES
+  COL_Door_RL: FOUND
+  Role: COLLISION PROXY
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/COL_Door_RL
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: COL_Door_RL
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: False
+  Expected runtime visibility: False
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Debug_Col | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0, 0, 0)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: collision mesh data is retained.
+  RESULT: collision renderer is already hidden.
+
+[RR]
+  Door_RR: FOUND
+  Role: VISIBLE DOOR
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_RR
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Door_RR
+  Vertices: 2040
+  Triangles: 940
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: On
+  Receive Shadows: True
+  Material slots: 6
+    [0] HT_Body_Tan | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [1] HT_Body_Tan_Alt | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [2] HT_Faded_Green | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [3] HT_Interior | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [4] HT_Trim_Black | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+    [5] HT_Chrome_Aged | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (-0.0103, -0.0031, 0.012)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: visual door renderer is present.
+  Glass_RR: FOUND
+  Role: VISIBLE GLASS
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/Door_RR/Glass_RR
+  Immediate parent: Door_RR
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: Glass_RR
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: True
+  Expected runtime visibility: True
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Glass_Dark_URP | Shader: Universal Render Pipeline/Lit | Queue: 3000 | Transparent: True
+  Local Position: (-0.0001, -0.004, 0.0006)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  Parent relationship: PASS
+  Expected immediate parent: Door_RR
+  Transparent Unity material detected: YES
+  COL_Door_RR: FOUND
+  Role: COLLISION PROXY
+  Full path: Truck_RuntimeVisual 1/TRUCK_ROOT/COL_Door_RR
+  Immediate parent: TRUCK_ROOT
+  Active Self: True
+  Active In Hierarchy: False
+  Mesh asset: COL_Door_RR
+  Vertices: 24
+  Triangles: 12
+  Renderer component: MeshRenderer
+  Renderer enabled: False
+  Expected runtime visibility: False
+  Shadow Casting: Off
+  Receive Shadows: False
+  Material slots: 1
+    [0] HT_Debug_Col | Shader: Universal Render Pipeline/Lit | Queue: 2000 | Transparent: False
+  Local Position: (0, 0, 0)
+  Local Rotation: (0, 0, 0)
+  Local Scale: (1, 1, 1)
+  Lossy Scale: (100, 100, 100)
+  Negative local scale axis: False
+  Negative scale anywhere in parent chain: False
+  RESULT: collision mesh data is retained.
+  RESULT: collision renderer is already hidden.
+
+GLOBAL DEBUG / EDITOR-ONLY CHECK
+----------------------------------------------------------
+COL_* objects: 15
+COL_* objects with enabled renderer: 0
+FIT_* objects: 5
+FIT_* objects currently activeSelf: 0
+Enabled active renderers using HT_Debug_Col: 0
+Imported Camera components under root: 0
+Imported Light components under root: 0
+
+SUMMARY
+----------------------------------------------------------
+Visual Door_* setup: PASS
+Glass_* hierarchy/render setup: PASS
+COL_Door_* mesh data: PASS
+Safe to create cleaned runtime visual prefab: YES
+
+No object, renderer, material, mesh, importer setting or prefab was modified during this validation.

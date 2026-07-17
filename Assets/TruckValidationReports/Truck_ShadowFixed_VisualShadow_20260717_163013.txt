@@ -1,0 +1,39 @@
+﻿HILLBILLY TAXI — TRUCK VISUAL / SHADOW REPORT
+==========================================================
+Generated: 2026-07-17 16:30:13
+Root: Truck_ShadowFixed
+Asset path: Assets/Vehicles/Truck/Truck_ShadowFixed.prefab
+Visible renderer bounds size: (2.829, 2.299, 6.771)
+
+RENDERER STATE
+----------------------------------------------------------
+Total Renderer components: 104
+Opaque visible renderers casting shadows: 81
+Opaque visible renderers not casting shadows: 0
+Collision renderers disabled by cleanup: 15
+Collision renderers still enabled: 0
+Glass renderers configured: 8
+Enabled renderers using HT_Debug_Col: 0
+FIT_* objects disabled by cleanup: 5
+FIT_* objects still activeSelf: 0
+Camera components removed by cleanup: 0
+Camera components remaining: 0
+Light components removed by cleanup: 0
+Light components remaining: 0
+
+PROJECT SHADOW STATE
+----------------------------------------------------------
+QualitySettings.shadows: All
+Current render pipeline: PC_RPAsset
+Scene Directional Lights: 1
+  - Directional Light | Enabled: True | Active: True | Shadows: None | Intensity: 1
+
+VISIBLE RENDERERS WITHOUT SHADOWS
+----------------------------------------------------------
+None.
+
+INTERPRETATION
+----------------------------------------------------------
+One or more renderer/light/project shadow settings are preventing shadows. Inspect the lines above.
+Glass intentionally does not cast a solid shadow.
+COL_* renderers intentionally remain invisible while their MeshFilter data is preserved.

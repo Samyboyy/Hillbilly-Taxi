@@ -1,0 +1,51 @@
+﻿HILLBILLY TAXI — PRODUCTION TRUCK IMPLEMENTATION
+==============================================================
+Generated: 2026-07-17 17:43:56
+Source: Truck_Player
+Vehicle root: FishNet Test Pickup Seat Rig
+Visible bounds: (2.83, 2.30, 6.77)
+Detected wheel radius: 0.556 m
+Compound COL_* colliders: 15
+
+RIGIDBODY
+--------------------------------------------------------------
+Mass: 2450 kg
+Centre of mass: (0.00, 0.74, 0.07)
+Angular damping: 0.32
+Max angular velocity: 12
+
+WHEELCOLLIDERS
+--------------------------------------------------------------
+Front Left: radius 0.556, travel 0.34, spring 47000, damper 7600
+Front Right: radius 0.556, travel 0.34, spring 47000, damper 7600
+Rear Left: radius 0.556, travel 0.34, spring 43000, damper 7000
+Rear Right: radius 0.556, travel 0.34, spring 43000, damper 7000
+
+AUTHORED VISUAL REFERENCES
+--------------------------------------------------------------
+• Suspension_FL: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FL
+• Suspension_FR: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FR
+• Suspension_RL: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RL
+• Suspension_RR: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RR
+• Steer_FL: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FL/Steer_FL
+• Steer_FR: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FR/Steer_FR
+• Wheel_FL_Rotation: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FL/Steer_FL/Wheel_FL_Rotation
+• Wheel_FR_Rotation: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_FR/Steer_FR/Wheel_FR_Rotation
+• Wheel_RL_Rotation: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RL/Wheel_RL_Rotation
+• Wheel_RR_Rotation: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Suspension_RR/Wheel_RR_Rotation
+• Rigidbody_CenterOfMass: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Physics_ROOT/Rigidbody_CenterOfMass
+• Seat_Driver_Pelvis: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_Driver/Seat_Driver_Pelvis
+• Seat_FrontRight_Pelvis: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_FrontRight/Seat_FrontRight_Pelvis
+• Seat_RearLeft_Pelvis: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_RearLeft/Seat_RearLeft_Pelvis
+• Seat_RearRight_Pelvis: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_RearRight/Seat_RearRight_Pelvis
+• Seat_TaxiPassenger_Pelvis: FishNet Test Pickup Seat Rig/Production Truck Integration/Production Truck Visual/TRUCK_ROOT/Occupants_ROOT/Seat_TaxiPassenger/Seat_TaxiPassenger_Pelvis
+
+EXPECTED TEST BEHAVIOUR
+--------------------------------------------------------------
+• Each wheel travels independently over bumps.
+• Landing from a jump compresses and rebounds the suspension.
+• Braking produces visible nose dive.
+• Hard cornering produces outward body roll.
+• The handbrake releases rear grip and permits a slide.
+• A high-energy sideways grip catch, curb strike or bad landing may naturally roll the truck.
+• The server remains the only authoritative physics machine.

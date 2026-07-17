@@ -1,0 +1,32 @@
+﻿HILLBILLY TAXI — HANDLING TUNE
+==========================================================
+Preset: Lively Hillbilly
+Generated: 2026-07-17 18:40:05
+
+RIGIDBODY
+----------------------------------------------------------
+Mass: 2450 kg
+Angular damping: 0.28
+Centre of mass: (0.00, 0.50, 0.05)
+
+MOTOR
+----------------------------------------------------------
+Maximum speed: 36
+Forward torque: 3900
+Front anti-roll: 5000
+Rear anti-roll: 3300
+Downforce per m/s: 6
+
+SUSPENSION
+----------------------------------------------------------
+Front Left: travel 0.36, spring 37000, damper 5000, target 0.48
+Front Right: travel 0.36, spring 37000, damper 5000, target 0.48
+Rear Left: travel 0.36, spring 34000, damper 4500, target 0.48
+Rear Right: travel 0.36, spring 34000, damper 4500, target 0.48
+
+Target feel:
+• One clearly visible rebound after a jump landing.
+• Suspension settles before becoming trampoline-like.
+• More outward lean during fast direction changes.
+• Stronger acceleration and roughly 80 mph top speed.
+• Looser rear behaviour under the handbrake.
