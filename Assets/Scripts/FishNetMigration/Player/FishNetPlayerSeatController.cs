@@ -10,8 +10,9 @@ namespace HillbillyTaxi.FishNetMigration.Player
     /// <summary>
     /// Synchronizes the vehicle and seat occupied by this player.
     ///
-    /// The server alone changes the SyncVars. All clients then attach their local
-    /// representation of the player to the appropriate seat anchor.
+    /// The server alone changes seat state. While the owner occupies the Driver
+    /// seat this component also rate-limits and submits driving input through the
+    /// player's owned NetworkObject.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
@@ -35,6 +36,13 @@ namespace HillbillyTaxi.FishNetMigration.Player
         [SerializeField, Range(1f, 180f)]
         private float maximumYaw = 105f;
 
+        [Header("Driver input networking")]
+        [SerializeField, Range(5f, 30f)]
+        private float driverInputSendRate = 20f;
+
+        [SerializeField, Min(0f)]
+        private float driverInputChangeThreshold = 0.02f;
+
         private readonly SyncVar<NetworkObject>
             _currentVehicleObject = new();
 
@@ -54,6 +62,10 @@ namespace HillbillyTaxi.FishNetMigration.Player
         private bool _presentationSeated;
         private FishNetVehicle _presentationVehicle;
         private int _presentationSeatIndex = -1;
+
+        private Vector2 _lastSentDriverMove;
+        private bool _lastSentHandbrake;
+        private float _nextDriverInputSendTime;
 
         public event Action<bool> SeatStateChanged;
 
@@ -144,6 +156,10 @@ namespace HillbillyTaxi.FishNetMigration.Player
                     deltaTime);
             }
 
+            SendDriverInputIfNeeded(
+                input.Move,
+                input.JumpHeld);
+
             if (input.InteractPressed)
             {
                 RequestExitSeatServerRpc();
@@ -214,10 +230,46 @@ namespace HillbillyTaxi.FishNetMigration.Player
                 return;
             }
 
-            // Keep the vehicle reference for the first callback so clients can resolve
-            // the correct door-side exit point before the reference is cleared.
+            // Preserve the vehicle reference for the first callback so clients can
+            // resolve the correct moving door-side exit point.
             _currentSeatIndex.Value = -1;
             _currentVehicleObject.Value = null;
+        }
+
+        [ServerRpc]
+        private void SubmitDriverInputServerRpc(
+            float steering,
+            float throttle,
+            bool handbrake)
+        {
+            if (!TryGetServerSeat(
+                    out FishNetVehicle vehicle,
+                    out int seatIndex) ||
+                !vehicle.TryGetSeat(
+                    seatIndex,
+                    out FishNetVehicleSeatDefinition seat) ||
+                seat.Role != FishNetVehicleSeatRole.Driver ||
+                Owner == null ||
+                !Owner.IsValid ||
+                vehicle.GetOccupantClientId(seatIndex) !=
+                    Owner.ClientId)
+            {
+                return;
+            }
+
+            FishNetTruckMotor motor =
+                vehicle.GetComponent<FishNetTruckMotor>();
+
+            if (motor == null)
+            {
+                return;
+            }
+
+            motor.SetDriverInputOnServer(
+                Owner.ClientId,
+                steering,
+                throttle,
+                handbrake);
         }
 
         [ServerRpc]
@@ -268,6 +320,55 @@ namespace HillbillyTaxi.FishNetMigration.Player
                     _seatPitch,
                     _seatYaw,
                     0f);
+        }
+
+        private void SendDriverInputIfNeeded(
+            Vector2 move,
+            bool handbrake)
+        {
+            if (!TryGetCurrentSeat(
+                    out _,
+                    out FishNetVehicleSeatDefinition seat) ||
+                seat.Role != FishNetVehicleSeatRole.Driver)
+            {
+                return;
+            }
+
+            move = Vector2.ClampMagnitude(
+                move,
+                1f);
+
+            float thresholdSquared =
+                driverInputChangeThreshold *
+                driverInputChangeThreshold;
+
+            bool changed =
+                (move - _lastSentDriverMove)
+                    .sqrMagnitude >
+                    thresholdSquared ||
+                handbrake != _lastSentHandbrake;
+
+            float now = Time.unscaledTime;
+
+            if (!changed &&
+                now < _nextDriverInputSendTime)
+            {
+                return;
+            }
+
+            _lastSentDriverMove = move;
+            _lastSentHandbrake = handbrake;
+
+            _nextDriverInputSendTime =
+                now +
+                1f / Mathf.Max(
+                    1f,
+                    driverInputSendRate);
+
+            SubmitDriverInputServerRpc(
+                move.x,
+                move.y,
+                handbrake);
         }
 
         private void HandleVehicleChanged(
@@ -332,6 +433,11 @@ namespace HillbillyTaxi.FishNetMigration.Player
             {
                 _seatPitch = 0f;
                 _seatYaw = 0f;
+
+                _lastSentDriverMove = Vector2.zero;
+                _lastSentHandbrake = false;
+                _nextDriverInputSendTime = 0f;
+
                 SeatStateChanged?.Invoke(true);
             }
         }
@@ -366,6 +472,7 @@ namespace HillbillyTaxi.FishNetMigration.Player
 
             SetCharacterCollisionEnabled(true);
             RestoreStandingCamera();
+
             SeatStateChanged?.Invoke(false);
         }
 
@@ -487,6 +594,17 @@ namespace HillbillyTaxi.FishNetMigration.Player
 
             gamepadLookSpeed =
                 Mathf.Max(0f, gamepadLookSpeed);
+
+            driverInputSendRate =
+                Mathf.Clamp(
+                    driverInputSendRate,
+                    5f,
+                    30f);
+
+            driverInputChangeThreshold =
+                Mathf.Max(
+                    0f,
+                    driverInputChangeThreshold);
 
             ResolveCameraRig();
         }
