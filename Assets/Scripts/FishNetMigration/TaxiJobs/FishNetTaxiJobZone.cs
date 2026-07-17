@@ -9,20 +9,44 @@ namespace HillbillyTaxi.FishNetMigration.TaxiJobs
     public sealed class FishNetTaxiJobZone : MonoBehaviour
     {
         [SerializeField] private FishNetTaxiJobManager jobManager;
+
+        // Legacy Phase 6 value retained for existing serialized data.
         [SerializeField] private FishNetTaxiJobZoneType zoneType;
+
+        [SerializeField] private string objectiveId = string.Empty;
+        [SerializeField] private GameObject markerRoot;
 
         private readonly HashSet<Collider> _taxiColliders = new();
 
+        public string ObjectiveId
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(objectiveId))
+                {
+                    return objectiveId.Trim();
+                }
+
+                return zoneType ==
+                       FishNetTaxiJobZoneType.Pickup
+                    ? "pickup"
+                    : "final_dropoff";
+            }
+        }
+
         private void FixedUpdate()
         {
-            if (jobManager == null || !jobManager.IsServerInitialized)
+            if (jobManager == null ||
+                !jobManager.IsServerInitialized)
             {
                 return;
             }
 
-            _taxiColliders.RemoveWhere(collider => collider == null);
+            _taxiColliders.RemoveWhere(
+                collider => collider == null);
+
             jobManager.ReportZonePresenceOnServer(
-                zoneType,
+                ObjectiveId,
                 _taxiColliders.Count > 0,
                 Time.fixedDeltaTime);
         }
@@ -45,7 +69,17 @@ namespace HillbillyTaxi.FishNetMigration.TaxiJobs
             _taxiColliders.Clear();
         }
 
-        private bool IsConfiguredTaxiCollider(Collider candidate)
+        internal void SetMarkerVisible(bool visible)
+        {
+            if (markerRoot != null &&
+                markerRoot.activeSelf != visible)
+            {
+                markerRoot.SetActive(visible);
+            }
+        }
+
+        private bool IsConfiguredTaxiCollider(
+            Collider candidate)
         {
             if (candidate == null ||
                 jobManager == null ||
@@ -55,17 +89,34 @@ namespace HillbillyTaxi.FishNetMigration.TaxiJobs
             }
 
             FishNetVehicle candidateVehicle =
-                candidate.GetComponentInParent<FishNetVehicle>();
+                candidate.GetComponentInParent<
+                    FishNetVehicle>();
 
-            return candidateVehicle == jobManager.TaxiVehicle;
+            return candidateVehicle ==
+                   jobManager.TaxiVehicle;
         }
 
         private void Reset()
         {
-            Collider zoneCollider = GetComponent<Collider>();
+            Collider zoneCollider =
+                GetComponent<Collider>();
+
             if (zoneCollider != null)
             {
                 zoneCollider.isTrigger = true;
+            }
+
+            if (markerRoot == null)
+            {
+                Transform candidate =
+                    transform.Find(
+                        "Marker Presentation");
+
+                if (candidate != null)
+                {
+                    markerRoot =
+                        candidate.gameObject;
+                }
             }
         }
     }

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45445217d248b594fb1474abb3eeb5eb, type: 3}
+  m_Name: MoonshineRunPrototype
+  m_EditorClassIdentifier: Assembly-CSharp::HillbillyTaxi.FishNetMigration.TaxiJobs.FishNetTaxiContractDefinition
+  contractId: moonshine_run_prototype
+  contractName: The Moonshine Run
+  passengerName: Earl
+  specialRule: Keep Earl and his moonshine in one piece.
+  baseReward: 125
+  pickupObjectiveId: pickup
+  pickupLocationName: Dusty's Diner
+  pickupObjectiveText: Pick up Earl at Dusty's Diner.
+  pickupStopDuration: 0.75
+  hasRequiredStop: 1
+  requiredStopObjectiveId: millers_garage
+  requiredStopLocationName: Miller's Garage
+  travelToRequiredStopText: Take Earl to Miller's Garage.
+  waitAtRequiredStopText: Wait for Earl.
+  requiredStopArrivalDuration: 0.75
+  passengerExitDuration: 3
+  requiredStopWaitDuration: 35
+  passengerReturnDuration: 3.5
+  requireTaxiNearbyDuringWait: 1
+  finalObjectiveId: final_dropoff
+  finalLocationName: Red Mesa Airfield
+  finalObjectiveText: Take Earl to Red Mesa Airfield.
+  finalStopDuration: 0.75
+  finalTimeLimitSeconds: 0
+  failOnFinalTimeout: 0
